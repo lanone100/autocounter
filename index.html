@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>零件盤點計數器</title>
+<title>線上自動計數器</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Be+Vietnam+Pro:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -773,6 +773,32 @@ body {
   font-weight: 600;
 }
 
+/* ── Part type chips ── */
+.ptype-chip {
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--fill2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.18s var(--ease-smooth);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ptype-chip:active { transform: scale(0.92); }
+.ptype-chip.active {
+  background: var(--tint-bg);
+  color: var(--tint);
+  border-color: var(--tint);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
 /* Dark/Light transition */
 * { transition: background-color 0.25s var(--ease-smooth), border-color 0.25s var(--ease-smooth), color 0.25s var(--ease-smooth), box-shadow 0.25s var(--ease-smooth); }
 </style>
@@ -781,7 +807,7 @@ body {
 
 <!-- ═══ NAVBAR ═══ -->
 <nav class="navbar">
-  <div class="navbar-title" id="nav-title">零件盤點</div>
+  <div class="navbar-title" id="nav-title">線上自動計數器</div>
   <div class="navbar-actions">
     <!-- Dark mode toggle -->
     <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="切換模式">🌙</button>
@@ -795,41 +821,6 @@ body {
 
 <!-- ═══ MAIN SCROLL ═══ -->
 <div class="scroll-area" id="main-scroll">
-
-  <!-- Hero Counter -->
-  <div class="hero-card">
-    <div class="hero-label" id="hero-label">零件總數量</div>
-    <div class="hero-count" id="count-num">0</div>
-    <div class="hero-unit" id="hero-unit">個零件已標記</div>
-    <div class="hero-row">
-      <div class="hero-badge" id="hero-status">待拍照</div>
-      <div class="info-pill" id="hero-time">— 尚未計數</div>
-    </div>
-  </div>
-
-  <!-- Stats Grid -->
-  <div class="stats-grid">
-    <div class="stat-card sky">
-      <div class="stat-icon">📸</div>
-      <div class="stat-value" id="stat-photos">0</div>
-      <div class="stat-label" id="stat-photos-label">已拍照片</div>
-    </div>
-    <div class="stat-card mint">
-      <div class="stat-icon">✅</div>
-      <div class="stat-value" id="stat-marks">0</div>
-      <div class="stat-label" id="stat-marks-label">手動標記</div>
-    </div>
-    <div class="stat-card amber">
-      <div class="stat-icon">🤖</div>
-      <div class="stat-value" id="stat-ai">—</div>
-      <div class="stat-label" id="stat-ai-label">AI 辨識</div>
-    </div>
-    <div class="stat-card violet">
-      <div class="stat-icon">🕒</div>
-      <div class="stat-value" id="stat-time">—</div>
-      <div class="stat-label" id="stat-time-label">計數時間</div>
-    </div>
-  </div>
 
   <!-- Camera Section -->
   <div class="section-header" id="sec-camera">相機</div>
@@ -884,10 +875,107 @@ body {
     </button>
   </div>
 
+  <!-- Hero Counter -->
+  <div class="hero-card" style="margin-top:16px;">
+    <div class="hero-label" id="hero-label">零件總數量</div>
+    <div class="hero-count" id="count-num">0</div>
+    <div class="hero-unit" id="hero-unit">個零件已標記</div>
+    <div class="hero-row">
+      <div class="hero-badge" id="hero-status">待拍照</div>
+      <div class="info-pill" id="hero-time">— 尚未計數</div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card sky">
+      <div class="stat-icon">📸</div>
+      <div class="stat-value" id="stat-photos">0</div>
+      <div class="stat-label" id="stat-photos-label">已拍照片</div>
+    </div>
+    <div class="stat-card mint">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="stat-marks">0</div>
+      <div class="stat-label" id="stat-marks-label">手動標記</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon">🤖</div>
+      <div class="stat-value" id="stat-ai">—</div>
+      <div class="stat-label" id="stat-ai-label">AI 辨識</div>
+    </div>
+    <div class="stat-card violet">
+      <div class="stat-icon">🕒</div>
+      <div class="stat-value" id="stat-time">—</div>
+      <div class="stat-label" id="stat-time-label">計數時間</div>
+    </div>
+  </div>
+
+  <!-- AI Settings Panel -->
+  <div class="card" id="ai-settings-card" style="display:none; margin-bottom:16px;">
+    <div style="padding:14px 16px 10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        🎯 <span id="ai-setting-title">AI 識別設定</span>
+      </div>
+
+      <!-- Part type selector -->
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;" id="ai-parttype-label">零件類型（提升準確度）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="parttype-chips">
+        <div class="ptype-chip active" data-val="auto" onclick="selectPartType(this)">🔍 自動偵測</div>
+        <div class="ptype-chip" data-val="screw" onclick="selectPartType(this)">🔩 螺絲/螺帽</div>
+        <div class="ptype-chip" data-val="pcb" onclick="selectPartType(this)">🟢 PCB 板</div>
+        <div class="ptype-chip" data-val="chip" onclick="selectPartType(this)">⬛ 晶片/IC</div>
+        <div class="ptype-chip" data-val="cable" onclick="selectPartType(this)">🔌 線材</div>
+        <div class="ptype-chip" data-val="spring" onclick="selectPartType(this)">🌀 彈簧</div>
+        <div class="ptype-chip" data-val="metal" onclick="selectPartType(this)">⚙️ 金屬件</div>
+        <div class="ptype-chip" data-val="plastic" onclick="selectPartType(this)">🔷 塑膠件</div>
+        <div class="ptype-chip" data-val="custom" onclick="selectPartType(this)">✏️ 自訂</div>
+      </div>
+
+      <!-- Custom input -->
+      <div id="custom-input-wrap" style="display:none;margin-bottom:10px;">
+        <input id="custom-part-input" type="text" placeholder="輸入零件名稱，例如：M3螺絲" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--fill3);color:var(--text-primary);font-size:14px;font-family:var(--font-display);outline:none;">
+      </div>
+
+      <!-- Precision mode -->
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;" id="ai-precision-label">分析精度</div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <div class="ptype-chip active" data-prec="fast" onclick="selectPrec(this)" id="prec-fast">⚡ 快速</div>
+        <div class="ptype-chip" data-prec="balanced" onclick="selectPrec(this)" id="prec-bal">⚖️ 均衡</div>
+        <div class="ptype-chip" data-prec="precise" onclick="selectPrec(this)" id="prec-pre">🔬 精確</div>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Result Banner -->
   <div class="ai-banner" id="ai-banner" style="display:none">
     <div class="ai-dot"></div>
     <div class="ai-text" id="ai-result-text">—</div>
+  </div>
+
+  <!-- AI Result Detail Card -->
+  <div class="card" id="ai-result-card" style="display:none;margin-bottom:16px;">
+    <div style="padding:14px 16px;">
+      <!-- Confidence bar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;" id="ai-conf-label">AI 信心度</div>
+        <div style="font-size:13px;font-weight:700;color:var(--indigo);" id="ai-conf-pct">—</div>
+      </div>
+      <div style="height:6px;background:var(--fill2);border-radius:99px;overflow:hidden;margin-bottom:12px;">
+        <div id="ai-conf-bar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#667eea,#764ba2);transition:width .8s cubic-bezier(.4,0,.2,1)"></div>
+      </div>
+
+      <!-- Part analysis -->
+      <div id="ai-analysis-text" style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px;padding:10px 12px;background:var(--fill3);border-radius:10px;"></div>
+
+      <!-- Manual correction -->
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;" id="ai-correct-label">手動修正 AI 數量</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="adjustAiCount(-1)" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--fill2);color:var(--text-primary);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;">−</button>
+        <div style="flex:1;text-align:center;font-size:28px;font-weight:700;color:var(--indigo);letter-spacing:-1px;" id="ai-adj-count">0</div>
+        <button onclick="adjustAiCount(+1)" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--fill2);color:var(--text-primary);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;">+</button>
+        <button onclick="confirmAiCount()" style="padding:8px 14px;background:var(--indigo);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;" id="ai-confirm-btn">確認</button>
+      </div>
+    </div>
   </div>
 
   <!-- Markers -->
@@ -980,6 +1068,22 @@ body {
       </div>
       <div class="list-chevron">›</div>
     </div>
+    <div class="list-row" onclick="showApiKeyModal()" style="cursor:pointer">
+      <div class="list-icon" style="background:rgba(255,149,0,0.12)">🔑</div>
+      <div class="list-content">
+        <div class="list-title" id="setting-apikey-title">Gemini API Key</div>
+        <div class="list-subtitle" id="setting-apikey-sub">點擊設定或更換 Key</div>
+      </div>
+      <div style="font-size:11px;color:var(--green);font-weight:600;" id="apikey-status">●</div>
+    </div>
+    <div class="list-row" style="cursor:pointer" onclick="showModelPicker()">
+      <div class="list-icon" style="background:rgba(88,86,214,0.12)">🤖</div>
+      <div class="list-content">
+        <div class="list-title" id="setting-model-title">Gemini 模型</div>
+        <div class="list-subtitle" id="setting-model-val">Gemini 2.0 Flash ⚡</div>
+      </div>
+      <div class="list-chevron">›</div>
+    </div>
   </div>
 
 </div><!-- /scroll-area -->
@@ -1021,7 +1125,7 @@ let photoCount = 0;
 /* ── i18n ── */
 const T = {
   zh: {
-    navTitle: '零件盤點', heroLabel: '零件總數量', heroUnit: '個零件已標記',
+    navTitle: '線上自動計數器', heroLabel: '零件總數量', heroUnit: '個零件已標記',
     heroWaiting: '待拍照', heroActive: '計數中', heroDone: '已完成',
     statPhotos: '已拍照片', statMarks: '手動標記', statAi: 'AI 辨識', statTime: '計數時間',
     secCamera: '相機', secMarkers: '已標記零件', secFormula: '計算公式 & 盤點表', secSettings: '設定',
@@ -1051,7 +1155,7 @@ const T = {
     timeAgo: (s) => `${s} 秒前`,
   },
   vi: {
-    navTitle: 'Kiểm Kê', heroLabel: 'Tổng số linh kiện', heroUnit: 'linh kiện đã đánh dấu',
+    navTitle: 'Bộ đếm tự động', heroLabel: 'Tổng số linh kiện', heroUnit: 'linh kiện đã đánh dấu',
     heroWaiting: 'Chờ chụp', heroActive: 'Đang đếm', heroDone: 'Hoàn tất',
     statPhotos: 'Ảnh đã chụp', statMarks: 'Đánh dấu tay', statAi: 'AI nhận diện', statTime: 'Thời gian đếm',
     secCamera: 'Camera', secMarkers: 'Điểm đánh dấu', secFormula: 'Công thức & Bảng', secSettings: 'Cài đặt',
@@ -1112,7 +1216,7 @@ function applyLang() {
   document.getElementById('btn-save-txt').textContent = t('btnSave');
   document.getElementById('btn-reset-txt').textContent = t('btnReset');
   document.getElementById('cam-ph-txt').textContent = t('camPh');
-  document.getElementById('no-marks-txt').textContent = t('noMarks');
+  document.getElementById('no-marks-txt') && (document.getElementById('no-marks-txt').textContent = t('noMarks'));
   document.getElementById('formula-title-txt').textContent = t('formulaTitle');
   document.getElementById('table-title-txt').textContent = t('tableTitle');
   document.getElementById('f1-desc').textContent = t('f1Desc');
@@ -1135,6 +1239,41 @@ function applyLang() {
   document.getElementById('tab3').textContent = t('tab3');
   document.getElementById('lang-flag').textContent = t('langFlag');
   document.getElementById('lang-label').textContent = t('langLabel');
+
+  // AI settings panel labels
+  const aiSettingTitle = document.getElementById('ai-setting-title');
+  if (aiSettingTitle) aiSettingTitle.textContent = lang === 'vi' ? 'Cài đặt AI nhận diện' : 'AI 識別設定';
+  const aiParttypeLabel = document.getElementById('ai-parttype-label');
+  if (aiParttypeLabel) aiParttypeLabel.textContent = lang === 'vi' ? 'Loại linh kiện (tăng độ chính xác)' : '零件類型（提升準確度）';
+  const aiPrecisionLabel = document.getElementById('ai-precision-label');
+  if (aiPrecisionLabel) aiPrecisionLabel.textContent = lang === 'vi' ? 'Độ chính xác phân tích' : '分析精度';
+  const aiConfLabel = document.getElementById('ai-conf-label');
+  if (aiConfLabel) aiConfLabel.textContent = lang === 'vi' ? 'ĐỘ TIN CẬY AI' : 'AI 信心度';
+  const aiCorrectLabel = document.getElementById('ai-correct-label');
+  if (aiCorrectLabel) aiCorrectLabel.textContent = lang === 'vi' ? 'Sửa thủ công số lượng AI' : '手動修正 AI 數量';
+  const aiConfirmBtn = document.getElementById('ai-confirm-btn');
+  if (aiConfirmBtn) aiConfirmBtn.textContent = lang === 'vi' ? 'Xác nhận' : '確認';
+
+  // New settings rows
+  const apikeyTitle = document.getElementById('setting-apikey-title');
+  if (apikeyTitle) apikeyTitle.textContent = 'Gemini API Key';
+  const apikeySub = document.getElementById('setting-apikey-sub');
+  if (apikeySub) apikeySub.textContent = lang === 'vi' ? 'Nhấn để cài đặt hoặc thay đổi Key' : '點擊設定或更換 Key';
+  const modelTitle = document.getElementById('setting-model-title');
+  if (modelTitle) modelTitle.textContent = lang === 'vi' ? 'Mô hình Gemini' : 'Gemini 模型';
+  updateApiKeyStatus();
+
+  // Part type chip labels
+  const ptLabels = lang === 'vi'
+    ? ['🔍 Tự động', '🔩 Vít/Đai ốc', '🟢 PCB', '⬛ Chip/IC', '🔌 Cáp', '🌀 Lò xo', '⚙️ Kim loại', '🔷 Nhựa', '✏️ Tùy chỉnh']
+    : ['🔍 自動偵測', '🔩 螺絲/螺帽', '🟢 PCB 板', '⬛ 晶片/IC', '🔌 線材', '🌀 彈簧', '⚙️ 金屬件', '🔷 塑膠件', '✏️ 自訂'];
+  document.querySelectorAll('.ptype-chip[data-val]').forEach((el, i) => { if (ptLabels[i]) el.textContent = ptLabels[i]; });
+
+  const precLabels = lang === 'vi' ? ['⚡ Nhanh', '⚖️ Cân bằng', '🔬 Chính xác'] : ['⚡ 快速', '⚖️ 均衡', '🔬 精確'];
+  document.querySelectorAll('.ptype-chip[data-prec]').forEach((el, i) => { if (precLabels[i]) el.textContent = precLabels[i]; });
+
+  const customInput = document.getElementById('custom-part-input');
+  if (customInput) customInput.placeholder = lang === 'vi' ? 'Nhập tên linh kiện, ví dụ: Vít M3' : '輸入零件名稱，例如：M3螺絲';
 
   // Update AI banner if shown
   const banner = document.getElementById('ai-banner');
@@ -1191,8 +1330,7 @@ function takeSnapshot() {
   document.getElementById('row-snap').style.display = 'none';
   document.getElementById('row-actions').style.display = 'grid';
   document.getElementById('row-save').style.display = 'grid';
-  document.getElementById('ai-banner').style.display = 'flex';
-  document.getElementById('ai-result-text').textContent = t('aiWait');
+  document.getElementById('ai-settings-card').style.display = 'block';
   document.getElementById('hero-status').textContent = t('heroActive');
   startTime = Date.now();
 }
@@ -1329,51 +1467,245 @@ function updateTable() {
   }
 }
 
+/* ── AI state ── */
+let selectedPartType = 'auto';
+let selectedPrec = 'fast';
+let aiAdjustedCount = null;
+
+function selectPartType(el) {
+  document.querySelectorAll('.ptype-chip[data-val]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedPartType = el.dataset.val;
+  document.getElementById('custom-input-wrap').style.display = selectedPartType === 'custom' ? 'block' : 'none';
+}
+function selectPrec(el) {
+  document.querySelectorAll('.ptype-chip[data-prec]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedPrec = el.dataset.prec;
+}
+
+function adjustAiCount(delta) {
+  const cur = parseInt(document.getElementById('ai-adj-count').textContent) || 0;
+  const next = Math.max(0, cur + delta);
+  document.getElementById('ai-adj-count').textContent = next;
+}
+
+function confirmAiCount() {
+  const n = parseInt(document.getElementById('ai-adj-count').textContent) || 0;
+  aiCount = n;
+  document.getElementById('stat-ai').textContent = n;
+  // Re-draw with corrected count shown
+  updateUI();
+  showToast(lang === 'zh' ? `✅ AI 數量已更新為 ${n}` : `✅ Đã cập nhật AI: ${n}`);
+}
+
+function buildPrompt() {
+  const isZh = lang === 'zh';
+  const langInstr = isZh ? 'Traditional Chinese (繁體中文)' : 'Vietnamese (Tiếng Việt)';
+
+  // Part type description
+  const ptMap = {
+    auto:    isZh ? '自動偵測所有可見零件' : 'tự động phát hiện tất cả linh kiện hiển thị',
+    screw:   isZh ? '螺絲、螺帽、螺栓等緊固件' : 'vít, đai ốc, bu lông',
+    pcb:     isZh ? 'PCB 電路板' : 'bảng mạch PCB',
+    chip:    isZh ? '晶片、IC 元件、處理器' : 'vi mạch, IC, chip xử lý',
+    cable:   isZh ? '線材、電纜、連接器' : 'dây cáp, đầu nối',
+    spring:  isZh ? '彈簧、彈片、彈性元件' : 'lò xo, lá đàn hồi',
+    metal:   isZh ? '金屬零件、衝壓件、鑄件' : 'linh kiện kim loại, dập, đúc',
+    plastic: isZh ? '塑膠零件、注塑件、外殼' : 'linh kiện nhựa, ép phun, vỏ',
+    custom:  document.getElementById('custom-part-input')?.value || (isZh ? '零件' : 'linh kiện'),
+  };
+  const partDesc = ptMap[selectedPartType] || ptMap.auto;
+
+  // Precision instructions
+  const precInstr = {
+    fast:    isZh
+      ? '快速掃描，給出最佳估計值即可。信心度可以較低。'
+      : 'Quét nhanh, cho kết quả ước lượng tốt nhất. Độ tin cậy có thể thấp hơn.',
+    balanced: isZh
+      ? '仔細觀察圖片，區分前景與背景，排除陰影和重疊遮擋的重複計數。'
+      : 'Quan sát kỹ ảnh, phân biệt tiền cảnh và hậu cảnh, tránh đếm trùng do bóng đổ hay che khuất.',
+    precise: isZh
+      ? '請以最高精度分析：(1) 先描述圖中所有可見的零件排列方式與區域分佈；(2) 依區域系統性地計數，例如左→右、上→下逐行掃描；(3) 說明任何不確定的部分；(4) 最後給出最終數量。'
+      : 'Phân tích với độ chính xác cao nhất: (1) Mô tả cách sắp xếp và phân bố khu vực; (2) Đếm theo vùng có hệ thống (trái→phải, trên→dưới); (3) Nêu rõ phần không chắc; (4) Đưa ra số lượng cuối cùng.',
+  };
+
+  return `You are a professional factory parts inventory vision system. Your task is to count "${partDesc}" in this image.
+
+INSTRUCTIONS:
+${precInstr[selectedPrec]}
+
+ACCURACY RULES:
+- Count only clearly visible, complete or mostly-complete items
+- Do NOT count the same item twice even if partially visible from different angles
+- If items overlap, estimate the hidden ones based on visible patterns
+- Ignore shadows, reflections, and background objects that are NOT the target part
+- For arranged/grid parts: count rows × columns, verify with direct count
+
+RESPONSE FORMAT — respond ONLY with valid JSON, no markdown fences, no extra text:
+{
+  "count": <integer: exact or best-estimate count>,
+  "confidence": <integer 0-100: your confidence in the count>,
+  "arrangement": "<brief description of how parts are arranged in ${langInstr}>",
+  "analysis": "<2-3 sentence analysis: what you see, how you counted, any uncertainty — in ${langInstr}>",
+  "description": "<one-line summary in ${langInstr}>",
+  "positions": [{"x": <0.0-1.0 relative left-right>, "y": <0.0-1.0 relative top-bottom>}]
+}
+
+Each position object represents one detected part's center. Include ALL detected parts in positions array.`;
+}
+
+/* ── Gemini API Key storage ── */
+function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || '';
+}
+function saveApiKey(key) {
+  localStorage.setItem('gemini_api_key', key.trim());
+}
+function showApiKeyModal() {
+  const isVi = lang === 'vi';
+  const cur = getApiKey();
+  const modal = document.createElement('div');
+  modal.id = 'apikey-modal';
+  modal.style.cssText = `position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);`;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:28px 28px 0 0;padding:24px 20px 40px;width:100%;max-width:430px;box-shadow:0 -8px 40px rgba(0,0,0,0.3);animation:slideUp .35s cubic-bezier(.34,1.56,.64,1)">
+      <div style="width:36px;height:4px;background:var(--fill1);border-radius:99px;margin:0 auto 20px;"></div>
+      <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">🔑 ${isVi ? 'Nhập Gemini API Key' : '輸入 Gemini API Key'}</div>
+      <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:16px;line-height:1.6;">
+        ${isVi
+          ? 'Lấy API Key miễn phí tại <b style="color:var(--tint)">aistudio.google.com</b><br>Key sẽ được lưu trên thiết bị của bạn.'
+          : '免費申請：<b style="color:var(--tint)">aistudio.google.com</b><br>API Key 僅儲存於本裝置，不會上傳。'}
+      </div>
+      <input id="apikey-input" type="password" value="${cur}"
+        placeholder="AIza..." autocomplete="off" autocorrect="off" spellcheck="false"
+        style="width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--fill3);color:var(--text-primary);font-size:15px;font-family:monospace;outline:none;margin-bottom:12px;-webkit-appearance:none;">
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('apikey-modal').remove()" style="flex:1;padding:14px;border-radius:14px;border:none;background:var(--fill2);color:var(--text-primary);font-size:15px;font-weight:600;cursor:pointer;">${isVi ? 'Huỷ' : '取消'}</button>
+        <button onclick="onSaveApiKey()" style="flex:2;padding:14px;border-radius:14px;border:none;background:var(--tint);color:white;font-size:15px;font-weight:700;cursor:pointer;">${isVi ? 'Lưu & Tiếp tục' : '儲存並繼續'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('apikey-input')?.focus(), 100);
+}
+function onSaveApiKey() {
+  const val = document.getElementById('apikey-input')?.value?.trim();
+  if (!val || !val.startsWith('AI')) {
+    const isVi = lang === 'vi';
+    showToast('⚠️ ' + (isVi ? 'API Key không hợp lệ (phải bắt đầu bằng "AI")' : 'API Key 格式錯誤（需以 AI 開頭）'));
+    return;
+  }
+  saveApiKey(val);
+  document.getElementById('apikey-modal')?.remove();
+  showToast('✅ ' + (lang === 'vi' ? 'Đã lưu API Key!' : 'API Key 已儲存！'));
+  // Auto-run if image is ready
+  if (bgImage) runAiDetect();
+}
+
+/* ── Gemini model selector ── */
+const GEMINI_MODELS = [
+  { id: 'gemini-2.0-flash',        label: 'Gemini 2.0 Flash ⚡', badge: '快速' },
+  { id: 'gemini-2.0-flash-thinking-exp', label: 'Gemini 2.0 Flash Thinking 🧠', badge: '推理' },
+  { id: 'gemini-1.5-pro',          label: 'Gemini 1.5 Pro 🎯', badge: '精確' },
+  { id: 'gemini-1.5-flash',        label: 'Gemini 1.5 Flash ⚡', badge: '經濟' },
+];
+let selectedGeminiModel = GEMINI_MODELS[0].id;
+
 /* ── AI ── */
 async function runAiDetect() {
+  // Check API key
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showApiKeyModal();
+    return;
+  }
+
   const btn = document.getElementById('btn-ai');
   const resultEl = document.getElementById('ai-result-text');
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> <span>${t('aiLoading')}</span>`;
+  document.getElementById('ai-settings-card').style.display = 'block';
 
   try {
     const base64 = bgDataUrl.split(',')[1];
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const prompt = buildPrompt();
+    const model = selectedGeminiModel;
+
+    // Gemini 2.0 Flash uses v1beta generateContent
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-            { type: 'text', text: `You are a factory parts inventory assistant. Count all individual parts/components visible.
-
-Respond ONLY with JSON (no markdown):
-{"count": <number>, "description": "<brief description in ${lang === 'zh' ? 'Traditional Chinese' : 'Vietnamese'}>", "positions": [{"x": <0.0-1.0>, "y": <0.0-1.0>}]}
-
-x and y are relative positions (0=left/top, 1=right/bottom) for each part.` }
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+            { text: prompt }
           ]
-        }]
+        }],
+        generationConfig: {
+          temperature: selectedPrec === 'fast' ? 0.2 : selectedPrec === 'balanced' ? 0.1 : 0.0,
+          maxOutputTokens: selectedPrec === 'precise' ? 2048 : selectedPrec === 'balanced' ? 1400 : 900,
+        }
       })
     });
 
-    const data = await resp.json();
-    const raw = data.content.map(c => c.text || '').join('');
-    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    aiCount = parsed.count;
+    if (!resp.ok) {
+      const errData = await resp.json();
+      const msg = errData?.error?.message || resp.statusText;
+      // If auth error, prompt re-enter
+      if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
+        localStorage.removeItem('gemini_api_key');
+        showApiKeyModal();
+        throw new Error(msg);
+      }
+      throw new Error(msg);
+    }
 
+    const data = await resp.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    const parsed = JSON.parse(raw.replace(/```json[\s\S]*?```|```/g, '').trim());
+
+    aiCount = parsed.count;
+    aiAdjustedCount = parsed.count;
+
+    // Draw markers
     if (parsed.positions?.length) {
-      markers = parsed.positions.map(p => ({ x: p.x * canvas.width, y: p.y * canvas.height }));
+      markers = parsed.positions.map(p => ({
+        x: Math.min(Math.max(p.x, 0), 1) * canvas.width,
+        y: Math.min(Math.max(p.y, 0), 1) * canvas.height
+      }));
       drawAll();
     }
 
+    // Banner
+    document.getElementById('ai-banner').style.display = 'flex';
     resultEl.innerHTML = t('aiResult', parsed.count, parsed.description);
+
+    // Detail card
+    const conf = Math.min(100, Math.max(0, parsed.confidence || 75));
+    document.getElementById('ai-result-card').style.display = 'block';
+    document.getElementById('ai-conf-pct').textContent = conf + '%';
+    document.getElementById('ai-analysis-text').textContent = parsed.analysis || parsed.description || '';
+    document.getElementById('ai-adj-count').textContent = parsed.count;
+
+    setTimeout(() => {
+      const barEl = document.getElementById('ai-conf-bar');
+      barEl.style.width = conf + '%';
+      barEl.style.background = conf >= 85
+        ? 'linear-gradient(90deg,#34c759,#30d158)'
+        : conf >= 65
+          ? 'linear-gradient(90deg,#ff9500,#ffd200)'
+          : 'linear-gradient(90deg,#ff3b30,#ff6b35)';
+    }, 100);
+
     document.getElementById('stat-ai').textContent = parsed.count;
     updateUI();
+
   } catch(e) {
-    resultEl.textContent = t('aiError');
+    document.getElementById('ai-banner').style.display = 'flex';
+    resultEl.textContent = t('aiError') + (e.message ? ` (${e.message})` : '');
     btn.disabled = false;
   }
 
@@ -1405,8 +1737,55 @@ function scrollToEl(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function showModelPicker() {
+  const isVi = lang === 'vi';
+  const modal = document.createElement('div');
+  modal.id = 'model-modal';
+  modal.style.cssText = `position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);`;
+  const rows = GEMINI_MODELS.map(m => `
+    <div onclick="pickModel('${m.id}', this)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--separator);cursor:pointer;transition:background .15s;" onmousedown="this.style.background='var(--fill3)'" onmouseup="this.style.background=''">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;color:var(--text-primary);">${m.label}</div>
+        <div style="font-size:12px;color:var(--text-tertiary);">${m.id}</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--tint-bg);color:var(--tint);">${m.badge}</div>
+      <div style="font-size:18px;color:var(--green);opacity:${selectedGeminiModel === m.id ? 1 : 0}">✓</div>
+    </div>`).join('');
+  modal.innerHTML = `
+    <div style="background:var(--surface);border-radius:28px 28px 0 0;width:100%;max-width:430px;box-shadow:0 -8px 40px rgba(0,0,0,0.3);animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;">
+      <div style="padding:16px 20px 12px;border-bottom:.5px solid var(--separator);">
+        <div style="width:36px;height:4px;background:var(--fill1);border-radius:99px;margin:0 auto 14px;"></div>
+        <div style="font-size:17px;font-weight:700;color:var(--text-primary);">🤖 ${isVi ? 'Chọn mô hình Gemini' : '選擇 Gemini 模型'}</div>
+      </div>
+      ${rows}
+      <div style="padding:14px 16px 36px;">
+        <button onclick="document.getElementById('model-modal').remove()" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--fill2);color:var(--text-primary);font-size:15px;font-weight:600;cursor:pointer;">${isVi ? 'Đóng' : '關閉'}</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function pickModel(id, el) {
+  selectedGeminiModel = id;
+  const m = GEMINI_MODELS.find(x => x.id === id);
+  document.getElementById('setting-model-val').textContent = m?.label || id;
+  document.getElementById('model-modal')?.remove();
+  showToast((lang === 'vi' ? '🤖 Đã chọn: ' : '🤖 已選擇：') + (m?.label || id));
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('apikey-status');
+  if (!el) return;
+  const has = !!getApiKey();
+  el.textContent = has ? '● 已設定' : '● 未設定';
+  el.style.color = has ? 'var(--green)' : 'var(--red)';
+  el.style.fontSize = '11px';
+}
+
 /* Init */
 applyLang();
+updateApiKeyStatus();
 </script>
 </body>
 </html>
