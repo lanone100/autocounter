@@ -773,6 +773,27 @@ body {
   font-weight: 600;
 }
 
+/* ── Upload drag area ── */
+.camera-wrap.drag-over {
+  outline: 3px dashed var(--tint);
+  outline-offset: -6px;
+}
+.camera-wrap.drag-over::after {
+  content: '📂 放開以上傳';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,122,255,0.22);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  border-radius: var(--radius-lg);
+  z-index: 10;
+  letter-spacing: 1px;
+}
+
+/* ── Upload drag area ── */
 /* ── Part type chips ── */
 .ptype-chip {
   padding: 5px 11px;
@@ -823,25 +844,31 @@ body {
 <div class="scroll-area" id="main-scroll">
 
   <!-- Camera Section -->
-  <div class="section-header" id="sec-camera">相機</div>
+  <div class="section-header" id="sec-camera">相機 / 上傳</div>
   <div class="camera-wrap" id="camera-wrap">
     <video id="camera-view" autoplay playsinline style="display:none"></video>
     <canvas id="canvas-overlay"></canvas>
     <div class="camera-placeholder" id="cam-placeholder">
       <div class="cam-icon">📷</div>
-      <span id="cam-ph-txt">點擊「開啟相機」開始拍照</span>
+      <span id="cam-ph-txt">開啟相機或上傳圖片</span>
     </div>
     <div class="cam-guide tl"></div>
     <div class="cam-guide tr"></div>
     <div class="cam-guide bl"></div>
     <div class="cam-guide br"></div>
+    <!-- Hidden file input -->
+    <input type="file" id="file-upload" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
   </div>
 
-  <!-- Camera Buttons -->
-  <div class="btn-row single" id="row-start">
+  <!-- Source Buttons -->
+  <div class="btn-row" id="row-start">
     <button class="btn btn-primary" onclick="startCamera()">
       <span class="btn-icon">📷</span>
       <span id="btn-start-txt">開啟相機</span>
+    </button>
+    <button class="btn btn-ghost" onclick="document.getElementById('file-upload').click()">
+      <span class="btn-icon">🖼</span>
+      <span id="btn-upload-txt">上傳圖片</span>
     </button>
   </div>
   <div class="btn-row" id="row-snap" style="display:none">
@@ -1129,9 +1156,9 @@ const T = {
     heroWaiting: '待拍照', heroActive: '計數中', heroDone: '已完成',
     statPhotos: '已拍照片', statMarks: '手動標記', statAi: 'AI 辨識', statTime: '計數時間',
     secCamera: '相機', secMarkers: '已標記零件', secFormula: '計算公式 & 盤點表', secSettings: '設定',
-    btnStart: '開啟相機', btnSnap: '拍照', btnCancel: '取消', btnAiTxt: 'AI 自動計數',
+    btnStart: '開啟相機', btnUpload: '上傳圖片', btnSnap: '拍照', btnCancel: '取消', btnAiTxt: 'AI 自動計數',
     btnUndo: '撤銷', btnSave: '儲存圖片', btnReset: '重設',
-    camPh: '點擊「開啟相機」開始拍照',
+    camPh: '開啟相機或點擊此處上傳圖片',
     noMarks: '尚未標記任何零件',
     aiWait: 'AI 準備就緒，點擊「AI 自動計數」開始分析',
     aiLoading: '正在分析圖像中…',
@@ -1159,9 +1186,9 @@ const T = {
     heroWaiting: 'Chờ chụp', heroActive: 'Đang đếm', heroDone: 'Hoàn tất',
     statPhotos: 'Ảnh đã chụp', statMarks: 'Đánh dấu tay', statAi: 'AI nhận diện', statTime: 'Thời gian đếm',
     secCamera: 'Camera', secMarkers: 'Điểm đánh dấu', secFormula: 'Công thức & Bảng', secSettings: 'Cài đặt',
-    btnStart: 'Mở camera', btnSnap: 'Chụp ảnh', btnCancel: 'Huỷ', btnAiTxt: 'AI tự động đếm',
+    btnStart: 'Mở camera', btnUpload: 'Tải ảnh lên', btnSnap: 'Chụp ảnh', btnCancel: 'Huỷ', btnAiTxt: 'AI tự động đếm',
     btnUndo: 'Hoàn tác', btnSave: 'Lưu ảnh', btnReset: 'Đặt lại',
-    camPh: 'Nhấn "Mở camera" để bắt đầu chụp ảnh',
+    camPh: 'Mở camera hoặc nhấn đây để tải ảnh lên',
     noMarks: 'Chưa đánh dấu linh kiện nào',
     aiWait: 'AI sẵn sàng, nhấn "AI tự động đếm" để phân tích',
     aiLoading: 'Đang phân tích hình ảnh…',
@@ -1209,6 +1236,7 @@ function applyLang() {
   document.getElementById('sec-formula').innerHTML = t('secFormula');
   document.getElementById('sec-settings').textContent = t('secSettings');
   document.getElementById('btn-start-txt').textContent = t('btnStart');
+  const uploadBtn = document.getElementById('btn-upload-txt'); if(uploadBtn) uploadBtn.textContent = t('btnUpload');
   document.getElementById('btn-snap-txt').textContent = t('btnSnap');
   document.getElementById('btn-cancel-txt').textContent = t('btnCancel');
   document.getElementById('btn-ai-txt').textContent = t('btnAiTxt');
@@ -1334,6 +1362,95 @@ function takeSnapshot() {
   document.getElementById('hero-status').textContent = t('heroActive');
   startTime = Date.now();
 }
+
+/* ── File Upload ── */
+function handleFileUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showToast('⚠️ ' + (lang === 'vi' ? 'Vui lòng chọn file ảnh' : '請選擇圖片檔案'));
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    loadImageFromDataUrl(ev.target.result, file.name);
+  };
+  reader.readAsDataURL(file);
+
+  // Reset input so same file can be re-selected
+  e.target.value = '';
+}
+
+function loadImageFromDataUrl(dataUrl, filename) {
+  // Stop camera if running
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
+
+  const img = new Image();
+  img.onload = function() {
+    // Set canvas to image dimensions (cap at 2400px for performance)
+    const MAX = 2400;
+    let w = img.naturalWidth, h = img.naturalHeight;
+    if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+    if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
+    bgDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    bgImage = new Image();
+    bgImage.src = bgDataUrl;
+    bgImage.onload = () => drawAll();
+
+    // Show canvas, hide placeholder
+    canvas.style.display = 'block';
+    document.getElementById('cam-placeholder').style.display = 'none';
+
+    // Show action buttons
+    document.getElementById('row-start').style.display = 'none';
+    document.getElementById('row-actions').style.display = 'grid';
+    document.getElementById('row-save').style.display = 'grid';
+    document.getElementById('ai-settings-card').style.display = 'block';
+    document.getElementById('hero-status').textContent = t('heroActive');
+
+    // Reset markers & stats
+    markers = [];
+    aiCount = null;
+    photoCount++;
+    document.getElementById('stat-photos').textContent = photoCount;
+    startTime = Date.now();
+    updateUI();
+
+    showToast('🖼 ' + (lang === 'vi' ? `Đã tải: ${filename || 'ảnh'}` : `已載入：${filename || '圖片'}`));
+  };
+  img.src = dataUrl;
+}
+
+// Drag & drop onto camera-wrap
+(function setupDragDrop() {
+  const wrap = document.getElementById('camera-wrap');
+  if (!wrap) return;
+  wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.classList.add('drag-over'); });
+  wrap.addEventListener('dragleave', () => wrap.classList.remove('drag-over'));
+  wrap.addEventListener('drop', e => {
+    e.preventDefault();
+    wrap.classList.remove('drag-over');
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = ev => loadImageFromDataUrl(ev.target.result, file.name);
+      reader.readAsDataURL(file);
+    }
+  });
+  // Tap on placeholder to trigger upload (mobile friendly)
+  document.getElementById('cam-placeholder').addEventListener('click', () => {
+    document.getElementById('file-upload').click();
+  });
+})();
 
 /* ── Marker ── */
 canvas.addEventListener('click', function(e) {
