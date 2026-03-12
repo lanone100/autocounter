@@ -1,1021 +1,1473 @@
 <!DOCTYPE html>
-<html lang="zh-TW" data-theme="light">
+<html lang="zh-TW" data-scheme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>零件相機計數 · 智慧點選計數</title>
+<title>智慧計數 · AI Vision</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+/* ─────────────────────────────────────────
+   SF Pro + Apple System Font Stack
+──────────────────────────────────────────*/
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700;800;900&display=swap');
 
+/* fallback to system SF Pro on Apple devices */
 :root {
-  --bg:        #f0f4ff;
-  --bg2:       #ffffff;
-  --surface:   rgba(255,255,255,0.92);
-  --border:    rgba(0,0,0,0.07);
-  --text:      #1a1a2e;
-  --text2:     #44475a;
-  --text3:     #9b9bb4;
-  --shadow:    0 8px 32px rgba(80,80,180,0.13);
-  --shadow-sm: 0 2px 12px rgba(80,80,180,0.09);
-  --radius:    22px;
-  --radius-sm: 14px;
-  --radius-xs: 10px;
-  --trans:     0.32s cubic-bezier(.4,0,.2,1);
-  --c1: #ff6b6b; --c1l: rgba(255,107,107,0.13);
-  --c2: #ffd93d; --c2l: rgba(255,217,61,0.13);
-  --c3: #6bcb77; --c3l: rgba(107,203,119,0.13);
-  --c4: #4d96ff; --c4l: rgba(77,150,255,0.13);
-  --c5: #c77dff; --c5l: rgba(199,125,255,0.13);
-  --c6: #ff9f1c; --c6l: rgba(255,159,28,0.13);
-}
-[data-theme="dark"] {
-  --bg:        #0f0f1a;
-  --bg2:       #1a1a2e;
-  --surface:   rgba(26,26,46,0.95);
-  --border:    rgba(255,255,255,0.08);
-  --text:      #f0f0ff;
-  --text2:     #c0c0d8;
-  --text3:     #5a5a7a;
-  --shadow:    0 8px 32px rgba(0,0,0,0.5);
-  --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
-  --c1l: rgba(255,107,107,0.18);
-  --c4l: rgba(77,150,255,0.18);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{
-  font-family:'Nunito',-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;
-  transition:background var(--trans),color var(--trans);
-  -webkit-font-smoothing:antialiased;overflow-x:hidden;
-}
-.app{max-width:430px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom,24px)}
-
-/* Header */
-.header{
-  position:sticky;top:0;z-index:200;
-  padding:env(safe-area-inset-top,48px) 18px 0;
-  background:var(--bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  transition:background var(--trans);
-}
-.header-inner{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 0 13px;border-bottom:1.5px solid var(--border);
-}
-.header-left{display:flex;flex-direction:column;gap:1px}
-.app-title{
-  font-size:26px;font-weight:900;letter-spacing:-0.5px;
-  background:linear-gradient(135deg,#4d96ff,#c77dff);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.app-sub{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase}
-.header-btns{display:flex;gap:9px;align-items:center}
-.icon-btn{
-  width:38px;height:38px;border-radius:50%;border:none;background:var(--surface);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:18px;box-shadow:var(--shadow-sm);
-  transition:transform 0.2s,background var(--trans);-webkit-tap-highlight-color:transparent;
-}
-.icon-btn:active{transform:scale(0.87)}
-
-.body{padding:18px 15px;display:flex;flex-direction:column;gap:16px}
-
-/* Card */
-.card{
-  background:var(--surface);border-radius:var(--radius);
-  box-shadow:var(--shadow);border:1.5px solid var(--border);overflow:hidden;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  transition:background var(--trans),box-shadow var(--trans);
+  --ff: -apple-system, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
 }
 
-/* Camera Viewport */
-.camera-card{position:relative;background:#000;border:none}
-.viewport{position:relative;width:100%;padding-bottom:75%;background:#000;overflow:hidden}
-video,#det-canvas{
-  position:absolute;top:0;left:0;
-  width:100%;height:100%;object-fit:cover;display:block;
-}
-video{opacity:0}
+/* ─────────────────────────────────────────
+   DESIGN TOKENS — DARK
+──────────────────────────────────────────*/
+[data-scheme="dark"] {
+  /* Backgrounds */
+  --bg-primary:     #000000;
+  --bg-secondary:   #1c1c1e;
+  --bg-tertiary:    #2c2c2e;
+  --bg-quaternary:  #3a3a3c;
+  --bg-grouped:     #000000;
 
-.bracket{position:absolute;width:26px;height:26px;z-index:5;pointer-events:none}
-.bracket.tl{top:14px;left:14px;border-top:3px solid #4d96ff;border-left:3px solid #4d96ff;border-radius:4px 0 0 0}
-.bracket.tr{top:14px;right:14px;border-top:3px solid #4d96ff;border-right:3px solid #4d96ff;border-radius:0 4px 0 0}
-.bracket.bl{bottom:14px;left:14px;border-bottom:3px solid #4d96ff;border-left:3px solid #4d96ff;border-radius:0 0 0 4px}
-.bracket.br{bottom:14px;right:14px;border-bottom:3px solid #4d96ff;border-right:3px solid #4d96ff;border-radius:0 0 4px 0}
+  /* Glass / Blur surfaces */
+  --glass-1:        rgba(28,28,30,0.82);
+  --glass-2:        rgba(44,44,46,0.75);
+  --glass-3:        rgba(58,58,60,0.60);
+  --glass-border:   rgba(255,255,255,0.10);
+  --glass-border-2: rgba(255,255,255,0.06);
 
-#scan-bar{
-  position:absolute;left:0;right:0;height:3px;z-index:4;pointer-events:none;
-  background:linear-gradient(90deg,transparent,#c77dff 40%,#4d96ff 60%,transparent);
-  box-shadow:0 0 12px rgba(77,150,255,0.7);
-  animation:scan 2.4s linear infinite;opacity:0;transition:opacity 0.4s;
-}
-#scan-bar.on{opacity:1}
-@keyframes scan{0%{top:0%}100%{top:100%}}
+  /* Text */
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(235,235,245,0.60);
+  --text-tertiary:  rgba(235,235,245,0.30);
+  --text-quaternary:rgba(235,235,245,0.18);
 
-#freeze-flash{
-  position:absolute;inset:0;background:#fff;
-  opacity:0;pointer-events:none;z-index:10;transition:opacity 0.08s;
-}
-#freeze-flash.flash{opacity:0.75}
+  /* Fills */
+  --fill-1: rgba(120,120,128,0.36);
+  --fill-2: rgba(120,120,128,0.32);
+  --fill-3: rgba(118,118,128,0.24);
+  --fill-4: rgba(116,116,128,0.18);
 
-#loading-ov{
-  position:absolute;inset:0;background:rgba(15,15,26,0.9);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:20;gap:14px;transition:opacity 0.5s;
-}
-#loading-ov.gone{opacity:0;pointer-events:none}
-.spinner{
-  width:44px;height:44px;border-radius:50%;
-  border:3px solid rgba(255,255,255,0.1);border-top-color:#4d96ff;
-  animation:spin 0.7s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-txt{
-  font-size:13px;font-weight:800;color:rgba(255,255,255,0.6);
-  letter-spacing:1.5px;text-transform:uppercase;text-align:center;line-height:1.8;
+  /* Separator */
+  --sep: rgba(84,84,88,0.65);
+
+  /* Apple System Colors (vibrant dark variants) */
+  --blue:   #0a84ff;
+  --green:  #30d158;
+  --indigo: #5e5ce6;
+  --orange: #ff9f0a;
+  --pink:   #ff375f;
+  --purple: #bf5af2;
+  --red:    #ff453a;
+  --teal:   #40c8e0;
+  --yellow: #ffd60a;
+  --cyan:   #32ade6;
+  --mint:   #63e6be;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.40);
+  --shadow-md: 0 8px 32px rgba(0,0,0,0.50);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.60);
+
+  /* Gradient accent */
+  --grad-blue:   linear-gradient(135deg, #0a84ff, #5e5ce6);
+  --grad-green:  linear-gradient(135deg, #30d158, #40c8e0);
+  --grad-orange: linear-gradient(135deg, #ff9f0a, #ff375f);
+  --grad-purple: linear-gradient(135deg, #bf5af2, #5e5ce6);
 }
 
-#mode-badge{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  z-index:6;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
-  padding:4px 14px;border-radius:20px;white-space:nowrap;
-  background:rgba(0,0,0,0.55);color:#fff;
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  pointer-events:none;transition:background 0.3s;
-}
-#mode-badge.frozen{background:rgba(199,125,255,0.75)}
+/* ─────────────────────────────────────────
+   DESIGN TOKENS — LIGHT
+──────────────────────────────────────────*/
+[data-scheme="light"] {
+  --bg-primary:     #f2f2f7;
+  --bg-secondary:   #ffffff;
+  --bg-tertiary:    #f2f2f7;
+  --bg-quaternary:  #e5e5ea;
+  --bg-grouped:     #f2f2f7;
 
-#big-count{
-  position:absolute;bottom:18px;left:18px;z-index:6;pointer-events:none;
-  display:flex;align-items:flex-end;gap:5px;
-}
-.big-num{
-  font-size:58px;font-weight:900;line-height:1;letter-spacing:-2px;color:#fff;
-  text-shadow:0 2px 16px rgba(0,0,0,0.6),0 0 40px rgba(77,150,255,0.5);
-}
-.big-num.pop{animation:pop .22s cubic-bezier(.36,.07,.19,.97)}
-@keyframes pop{0%{transform:scale(1.22)}60%{transform:scale(0.95)}100%{transform:scale(1)}}
-.big-unit{font-size:16px;font-weight:800;color:rgba(255,255,255,0.7);margin-bottom:10px}
+  --glass-1:        rgba(255,255,255,0.80);
+  --glass-2:        rgba(242,242,247,0.75);
+  --glass-3:        rgba(235,235,240,0.70);
+  --glass-border:   rgba(0,0,0,0.10);
+  --glass-border-2: rgba(0,0,0,0.06);
 
-/* Controls */
-.cam-controls{
-  display:flex;align-items:center;justify-content:space-around;
-  padding:18px 10px 20px;gap:10px;
-}
-.cam-btn{
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  border:none;background:none;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;transition:transform 0.15s;
-}
-.cam-btn:active{transform:scale(0.88)}
-.cam-btn-circle{
-  width:52px;height:52px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;box-shadow:var(--shadow-sm);border:2px solid var(--border);
-  background:var(--bg2);transition:background var(--trans);
-}
-.cam-btn-circle.accent {background:linear-gradient(135deg,#4d96ff,#c77dff);border:none;box-shadow:0 4px 20px rgba(77,150,255,0.4)}
-.cam-btn-circle.accent2{background:linear-gradient(135deg,#ff6b6b,#ffd93d);border:none;box-shadow:0 4px 20px rgba(255,107,107,0.35)}
-.cam-btn-circle.accent3{background:linear-gradient(135deg,#6bcb77,#4d96ff);border:none;box-shadow:0 4px 20px rgba(107,203,119,0.35)}
-.cam-btn-label{font-size:11px;font-weight:800;color:var(--text3);letter-spacing:0.3px}
+  --text-primary:   #000000;
+  --text-secondary: rgba(60,60,67,0.60);
+  --text-tertiary:  rgba(60,60,67,0.30);
+  --text-quaternary:rgba(60,60,67,0.18);
 
-/* Stats strip */
-.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 15px 15px}
-.stat-pill{
-  border-radius:var(--radius-sm);padding:13px 12px;
-  display:flex;flex-direction:column;gap:3px;position:relative;overflow:hidden;
-}
-.stat-pill::before{
-  content:'';position:absolute;top:-20px;right:-20px;
-  width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.12);
-}
-.s-label{font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;opacity:0.75;color:#fff}
-.s-val  {font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1.1}
-.s-unit {font-size:11px;font-weight:700;color:rgba(255,255,255,0.65)}
+  --fill-1: rgba(120,120,128,0.20);
+  --fill-2: rgba(120,120,128,0.16);
+  --fill-3: rgba(118,118,128,0.12);
+  --fill-4: rgba(116,116,128,0.08);
 
-/* Type filter */
-.type-section{padding:4px 15px 16px;display:flex;flex-direction:column;gap:10px}
-.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.type-btn{
-  border:2px solid var(--border);background:var(--bg);
-  border-radius:var(--radius-xs);padding:10px 4px;
-  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;
-  font-family:inherit;transition:all 0.18s;-webkit-tap-highlight-color:transparent;
-}
-.type-btn:active{transform:scale(0.93)}
-.type-btn.sel{border-color:transparent;box-shadow:0 4px 16px rgba(77,150,255,0.25)}
-.type-emoji{font-size:22px;line-height:1}
-.type-name {font-size:11px;font-weight:800;color:var(--text2);letter-spacing:0.2px}
-.type-btn.sel .type-name{color:#fff}
+  --sep: rgba(60,60,67,0.29);
 
-/* Detection list */
-.det-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px 8px}
-.det-title{font-size:14px;font-weight:900;color:var(--text)}
-.det-badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:var(--c4l);color:var(--c4)}
-.det-list{display:flex;flex-wrap:wrap;gap:7px;padding:2px 15px 16px;min-height:46px}
-.det-chip{
-  display:flex;align-items:center;gap:6px;border-radius:20px;padding:6px 13px;
-  font-size:13px;font-weight:800;animation:chip-in .18s ease;
-}
-@keyframes chip-in{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
-.chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.det-empty{font-size:13px;font-weight:700;color:var(--text3);padding:6px 0;width:100%;text-align:center}
+  --blue:   #007aff;
+  --green:  #34c759;
+  --indigo: #5856d6;
+  --orange: #ff9500;
+  --pink:   #ff2d55;
+  --purple: #af52de;
+  --red:    #ff3b30;
+  --teal:   #30b0c7;
+  --yellow: #ffcc00;
+  --cyan:   #32ade6;
+  --mint:   #00c7be;
 
-/* History */
-.history-wrap{padding:0 15px 16px;display:flex;flex-direction:column;gap:7px;max-height:230px;overflow-y:auto}
-.hist-item{
-  display:flex;align-items:center;gap:10px;
-  background:var(--bg);border-radius:var(--radius-xs);
-  padding:10px 13px;border:1.5px solid var(--border);animation:slide-in .22s ease;
-}
-@keyframes slide-in{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
-.hist-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1.5px solid var(--border)}
-.hist-info{flex:1;display:flex;flex-direction:column;gap:2px}
-.hist-count{font-size:17px;font-weight:900;color:var(--c4)}
-.hist-meta {font-size:11px;font-weight:700;color:var(--text3)}
-.hist-del{background:none;border:none;color:var(--text3);font-size:17px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent}
-.hist-empty{text-align:center;font-size:13px;font-weight:700;color:var(--text3);padding:12px 0}
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.16);
 
-/* Confidence slider */
-.conf-row{display:flex;align-items:center;gap:12px;padding:0 15px 16px}
-.conf-label{font-size:12px;font-weight:800;color:var(--text3);white-space:nowrap}
-input[type=range]{
-  flex:1;height:4px;border-radius:2px;
-  -webkit-appearance:none;appearance:none;
-  background:linear-gradient(90deg,#4d96ff 0%,#4d96ff var(--pct,36%),rgba(128,128,128,0.2) var(--pct,36%));
-  outline:none;cursor:pointer;
+  --grad-blue:   linear-gradient(135deg, #007aff, #5856d6);
+  --grad-green:  linear-gradient(135deg, #34c759, #30b0c7);
+  --grad-orange: linear-gradient(135deg, #ff9500, #ff2d55);
+  --grad-purple: linear-gradient(135deg, #af52de, #5856d6);
 }
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;appearance:none;
-  width:20px;height:20px;border-radius:50%;
-  background:linear-gradient(135deg,#4d96ff,#c77dff);
-  border:3px solid #fff;box-shadow:0 2px 8px rgba(77,150,255,0.5);
+
+/* ─────────────────────────────────────────
+   BASE
+──────────────────────────────────────────*/
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--ff);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
 }
-.conf-val{font-size:13px;font-weight:900;color:var(--c4);min-width:36px;text-align:right}
 
-/* Fade-up on load */
-.body>*{animation:fade-up 0.4s ease backwards}
-.body>*:nth-child(1){animation-delay:0s}
-.body>*:nth-child(2){animation-delay:.07s}
-.body>*:nth-child(3){animation-delay:.13s}
-.body>*:nth-child(4){animation-delay:.19s}
-@keyframes fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* ─────────────────────────────────────────
+   LAYOUT
+──────────────────────────────────────────*/
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  padding-bottom: max(env(safe-area-inset-bottom), 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-/* 點選提示 */
-.click-hint {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 6px 16px;
-  border-radius: 40px;
+/* ─────────────────────────────────────────
+   STATUS BAR SPACER
+──────────────────────────────────────────*/
+.status-spacer {
+  height: max(env(safe-area-inset-top), 44px);
+  background: var(--bg-primary);
+  transition: background 0.3s;
+}
+
+/* ─────────────────────────────────────────
+   NAVIGATION BAR
+──────────────────────────────────────────*/
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--glass-1);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--sep);
+  transition: background 0.3s;
+}
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 14px;
+}
+.nav-title-group { display: flex; flex-direction: column; gap: 1px; }
+.nav-large-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+.nav-subtitle {
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.2);
-  pointer-events: none;
-  z-index: 7;
-  white-space: nowrap;
-  opacity: 0.8;
+  font-weight: 400;
+  color: var(--text-secondary);
+  letter-spacing: -0.1px;
+  transition: color 0.3s;
 }
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+
+/* SF Symbol-style icon buttons */
+.nav-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--fill-2);
+  color: var(--blue);
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.12s, color 0.3s;
+  position: relative;
+}
+.nav-btn:active { transform: scale(0.88); background: var(--fill-3); }
+.nav-btn svg { pointer-events: none; }
+
+/* Theme toggle with animation */
+.theme-toggle {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--fill-2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.12s;
+  overflow: hidden;
+  position: relative;
+}
+.theme-toggle:active { transform: scale(0.88); }
+.theme-icon {
+  font-size: 17px;
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+  position: absolute;
+}
+.theme-icon.moon { opacity: 1; transform: rotate(0deg) scale(1); }
+.theme-icon.sun  { opacity: 0; transform: rotate(90deg) scale(0.5); }
+[data-scheme="light"] .theme-icon.moon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+[data-scheme="light"] .theme-icon.sun  { opacity: 1; transform: rotate(0deg) scale(1); }
+
+/* ─────────────────────────────────────────
+   CONTENT AREA
+──────────────────────────────────────────*/
+.content { display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 0; }
+
+/* Section headers (like iOS Settings) */
+.section-header {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  letter-spacing: -0.1px;
+  padding: 0 4px;
+  margin-bottom: -4px;
+  margin-top: 4px;
+  transition: color 0.3s;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+/* ─────────────────────────────────────────
+   CAMERA CARD
+──────────────────────────────────────────*/
+.camera-card {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  overflow: hidden;
+}
+video, #det-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+video { opacity: 0; }
+
+/* Viewfinder corners */
+.vf-corner {
+  position: absolute; width: 24px; height: 24px;
+  z-index: 5; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.vf-corner.tl { top: 16px; left: 16px;
+  border-top: 2.5px solid rgba(255,255,255,0.85);
+  border-left: 2.5px solid rgba(255,255,255,0.85);
+  border-radius: 5px 0 0 0; }
+.vf-corner.tr { top: 16px; right: 16px;
+  border-top: 2.5px solid rgba(255,255,255,0.85);
+  border-right: 2.5px solid rgba(255,255,255,0.85);
+  border-radius: 0 5px 0 0; }
+.vf-corner.bl { bottom: 16px; left: 16px;
+  border-bottom: 2.5px solid rgba(255,255,255,0.85);
+  border-left: 2.5px solid rgba(255,255,255,0.85);
+  border-radius: 0 0 0 5px; }
+.vf-corner.br { bottom: 16px; right: 16px;
+  border-bottom: 2.5px solid rgba(255,255,255,0.85);
+  border-right: 2.5px solid rgba(255,255,255,0.85);
+  border-radius: 0 0 5px 0; }
+
+/* Scan line */
+#scan-line {
+  position: absolute; left: 0; right: 0; height: 1.5px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0,122,255,0.3) 20%,
+    rgba(0,122,255,0.9) 50%,
+    rgba(0,122,255,0.3) 80%,
+    transparent 100%);
+  box-shadow: 0 0 12px rgba(0,122,255,0.6), 0 0 4px rgba(0,122,255,1);
+  z-index: 4; pointer-events: none;
+  opacity: 0; transition: opacity 0.4s;
+  animation: scanAnim 2.5s cubic-bezier(0.45,0,0.55,1) infinite;
+}
+#scan-line.on { opacity: 1; }
+@keyframes scanAnim {
+  0%   { top: 5%;  }
+  50%  { top: 95%; }
+  100% { top: 5%;  }
+}
+
+/* Flash */
+#cam-flash {
+  position: absolute; inset: 0;
+  background: #fff; opacity: 0;
+  pointer-events: none; z-index: 20;
+  transition: opacity 0.06s linear;
+}
+#cam-flash.on { opacity: 0.75; }
+
+/* Loading overlay */
+#load-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; z-index: 30;
+  transition: opacity 0.5s ease;
+}
+#load-overlay.hidden { opacity: 0; pointer-events: none; }
+.spinner {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,0.12);
+  border-top-color: #0a84ff;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-label {
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: -0.2px;
+  text-align: center; line-height: 1.6;
+}
+
+/* HUD: Target pill top-center */
+#target-hud {
+  position: absolute; top: 14px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 8; pointer-events: none;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(255,255,255,0.18);
+  border-radius: 20px; padding: 6px 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  transform: translateX(-50%) translateY(-8px) scale(0.92);
+  white-space: nowrap;
+}
+#target-hud.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+.hud-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #30d158;
+  animation: livePulse 1.4s ease infinite;
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.5); }
+}
+.hud-target-name {
+  font-size: 13px; font-weight: 600;
+  color: #fff; letter-spacing: -0.2px;
+}
+
+/* Tap hint overlay */
+#tap-hint {
+  position: absolute; inset: 0; z-index: 7;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+#tap-hint.gone { opacity: 0; }
+.tap-ring {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  animation: tapPulse 2.2s ease infinite;
+}
+.tap-ring::after {
+  content: '';
+  position: absolute; inset: -10px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  animation: tapPulse 2.2s ease 0.4s infinite;
+}
+@keyframes tapPulse {
+  0%,100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.1); opacity: 1; }
+}
+.tap-emoji { font-size: 30px; }
+.tap-label {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: -0.2px;
+}
+
+/* Tap ripple */
+.tap-ripple {
+  position: absolute; border-radius: 50%;
+  width: 56px; height: 56px;
+  border: 2px solid rgba(0,122,255,0.8);
+  transform: translate(-50%,-50%) scale(0);
+  pointer-events: none; z-index: 15;
+  animation: rippleOut 0.55s ease-out forwards;
+}
+@keyframes rippleOut {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(3.2); opacity: 0; }
+}
+
+/* Bottom HUD: count */
+.cam-bottom-hud {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 48px 18px 18px;
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%);
+  z-index: 6; pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.hud-count-group { display: flex; flex-direction: column; gap: 1px; }
+.hud-count-num {
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -3px;
+  line-height: 1;
+  color: #fff;
+  transition: color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+}
+.hud-count-num.targeted { color: #0a84ff; }
+[data-scheme="light"] .hud-count-num.targeted { color: #0a84ff; }
+.hud-count-label {
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.60);
+  letter-spacing: -0.1px;
+}
+
+/* Mode badge */
+.mode-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  border: 0.5px solid rgba(255,255,255,0.14);
+  border-radius: 12px; padding: 5px 10px;
+}
+.mode-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  transition: background 0.3s;
+}
+.mode-dot.live    { background: #30d158; animation: livePulse 1.4s ease infinite; }
+.mode-dot.frozen  { background: #0a84ff; animation: none; }
+.mode-text {
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────
+   CAMERA CONTROLS BAR
+──────────────────────────────────────────*/
+.cam-controls {
+  background: var(--bg-secondary);
+  border-radius: 0 0 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  border-top: 0.5px solid var(--sep);
+  overflow: hidden;
+  transition: background 0.3s;
+}
+.cam-ctrl-btn {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px; padding: 14px 8px;
+  border: none; background: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  position: relative;
+}
+.cam-ctrl-btn:active { background: var(--fill-2); }
+.cam-ctrl-btn + .cam-ctrl-btn::before {
+  content: '';
+  position: absolute; left: 0; top: 14px; bottom: 14px;
+  width: 0.5px;
+  background: var(--sep);
+}
+.ctrl-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: transform 0.15s;
+}
+.cam-ctrl-btn:active .ctrl-icon { transform: scale(0.88); }
+.ctrl-icon.blue-grad   { background: var(--grad-blue); }
+.ctrl-icon.green-grad  { background: var(--grad-green); }
+.ctrl-icon.orange-grad { background: var(--grad-orange); }
+.ctrl-icon.red-fill    { background: rgba(255,69,58,0.15); }
+.ctrl-icon.red-fill svg { color: var(--red); }
+.ctrl-label {
+  font-size: 11px; font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: -0.1px;
+  transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────────
+   STATS CARD (Grouped)
+──────────────────────────────────────────*/
+.stats-card {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s;
+}
+.stat-row {
+  display: flex; align-items: center;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  gap: 12px;
+  transition: border-color 0.3s;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-icon-wrap {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.stat-row-content { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.stat-row-label {
+  font-size: 16px; font-weight: 400;
+  color: var(--text-primary); letter-spacing: -0.3px;
+  transition: color 0.3s;
+}
+.stat-row-sub {
+  font-size: 12px; font-weight: 400;
+  color: var(--text-secondary); letter-spacing: -0.1px;
+  transition: color 0.3s;
+}
+.stat-row-value {
+  font-size: 17px; font-weight: 600;
+  letter-spacing: -0.5px;
+  transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────────
+   RESULT CARD — Collapsible
+──────────────────────────────────────────*/
+.result-card {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.3s ease,
+              background 0.3s;
+}
+.result-card.open { max-height: 600px; opacity: 1; }
+.rc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  transition: border-color 0.3s;
+}
+.rc-header-left { display: flex; flex-direction: column; gap: 1px; }
+.rc-title {
+  font-size: 15px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: -0.3px;
+  transition: color 0.3s;
+}
+.rc-subtitle {
+  font-size: 12px; font-weight: 400;
+  color: var(--text-secondary);
+  transition: color 0.3s;
+}
+.rc-badge {
+  font-size: 14px; font-weight: 600;
+  background: rgba(0,122,255,0.12);
+  color: var(--blue);
+  padding: 4px 12px; border-radius: 20px;
+  letter-spacing: -0.2px;
+  transition: color 0.3s, background 0.3s;
+}
+.rc-list { padding: 8px 0; }
+.rc-item {
+  display: flex; align-items: center;
+  padding: 10px 16px; gap: 12px;
+  transition: background 0.15s;
+}
+.rc-item:active { background: var(--fill-4); }
+.rc-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.rc-item-name {
+  flex: 1;
+  font-size: 15px; font-weight: 400;
+  color: var(--text-primary); letter-spacing: -0.2px;
+  transition: color 0.3s;
+}
+.rc-item-name.highlight { font-weight: 600; }
+.rc-bar-wrap {
+  flex: 2; height: 4px;
+  background: var(--fill-3); border-radius: 2px;
+  overflow: hidden;
+  transition: background 0.3s;
+}
+.rc-bar { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.rc-item-count {
+  font-size: 15px; font-weight: 600;
+  color: var(--text-secondary); min-width: 24px;
+  text-align: right; letter-spacing: -0.3px;
+  transition: color 0.3s;
+}
+
+/* ─────────────────────────────────────────
+   SLIDER CARD
+──────────────────────────────────────────*/
+.slider-card {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s;
+}
+.slider-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.slider-label {
+  font-size: 15px; font-weight: 400;
+  color: var(--text-primary); letter-spacing: -0.2px;
+  transition: color 0.3s;
+}
+.slider-value {
+  font-size: 15px; font-weight: 600;
+  color: var(--blue); letter-spacing: -0.3px;
+  min-width: 40px; text-align: right;
+  transition: color 0.3s;
+}
+/* Apple-style range slider */
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 28px;
+  background: transparent;
+  outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 5px; border-radius: 2.5px;
+  background: linear-gradient(90deg,
+    var(--blue) 0%,
+    var(--blue) var(--pct,30%),
+    var(--fill-3) var(--pct,30%),
+    var(--fill-3) 100%);
+  transition: background 0.2s;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(0,0,0,0.12);
+  margin-top: -10.5px;
+  transition: transform 0.12s;
+}
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
+
+/* ─────────────────────────────────────────
+   HISTORY CARD
+──────────────────────────────────────────*/
+.history-card {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s;
+}
+.hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  transition: border-color 0.3s;
+}
+.hist-title {
+  font-size: 15px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: -0.3px;
+  transition: color 0.3s;
+}
+.hist-clear-btn {
+  font-size: 14px; font-weight: 400;
+  color: var(--red); background: none; border: none;
+  cursor: pointer; padding: 2px 0;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: -0.2px;
+  transition: opacity 0.15s;
+}
+.hist-clear-btn:active { opacity: 0.6; }
+.hist-list { max-height: 260px; overflow-y: auto; }
+.hist-empty {
+  text-align: center; padding: 24px 16px;
+  font-size: 14px; font-weight: 400;
+  color: var(--text-tertiary); letter-spacing: -0.1px;
+  transition: color 0.3s;
+}
+.hist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  animation: histSlide 0.25s ease;
+  transition: background 0.15s, border-color 0.3s;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-item:active { background: var(--fill-4); }
+@keyframes histSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.hist-thumb {
+  width: 52px; height: 40px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+  border: 0.5px solid var(--glass-border);
+}
+.hist-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.hist-target {
+  font-size: 15px; font-weight: 500;
+  color: var(--text-primary); letter-spacing: -0.2px;
+  transition: color 0.3s;
+}
+.hist-meta {
+  font-size: 12px; font-weight: 400;
+  color: var(--text-secondary); letter-spacing: -0.1px;
+  transition: color 0.3s;
+}
+.hist-count {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--blue);
+  transition: color 0.3s;
+}
+.hist-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-tertiary); font-size: 18px;
+  padding: 4px; display: flex; align-items: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+.hist-del:active { color: var(--red); }
+
+/* ─────────────────────────────────────────
+   SCROLLBAR
+──────────────────────────────────────────*/
+::-webkit-scrollbar { width: 0; }
+
+/* ─────────────────────────────────────────
+   COLORFUL ICON BG HELPERS
+──────────────────────────────────────────*/
+.ic-blue   { background: linear-gradient(135deg, #0a84ff, #5e5ce6); }
+.ic-green  { background: linear-gradient(135deg, #30d158, #40c8e0); }
+.ic-orange { background: linear-gradient(135deg, #ff9f0a, #ff375f); }
+.ic-purple { background: linear-gradient(135deg, #bf5af2, #5e5ce6); }
+.ic-teal   { background: linear-gradient(135deg, #40c8e0, #30d158); }
+.ic-red    { background: linear-gradient(135deg, #ff453a, #ff9f0a); }
+[data-scheme="light"] .ic-blue   { background: linear-gradient(135deg, #007aff, #5856d6); }
+[data-scheme="light"] .ic-green  { background: linear-gradient(135deg, #34c759, #30b0c7); }
+[data-scheme="light"] .ic-orange { background: linear-gradient(135deg, #ff9500, #ff2d55); }
+[data-scheme="light"] .ic-purple { background: linear-gradient(135deg, #af52de, #5856d6); }
+[data-scheme="light"] .ic-teal   { background: linear-gradient(135deg, #30b0c7, #34c759); }
+[data-scheme="light"] .ic-red    { background: linear-gradient(135deg, #ff3b30, #ff9500); }
 </style>
 
-<!-- TensorFlow and COCO-SSD -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <div class="header-inner">
-      <div class="header-left">
-        <div class="app-title">零件計數</div>
-        <div class="app-sub">點選物件 · 智慧計數</div>
+
+  <!-- Status bar spacer -->
+  <div class="status-spacer"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="nav-title-group">
+        <div class="nav-large-title">智慧物件計數</div>
+        <div class="nav-subtitle">點選物件 · AI 計算數量</div>
       </div>
-      <div class="header-btns">
-        <button class="icon-btn" id="flipBtn" title="翻轉鏡頭">🔄</button>
-        <button class="icon-btn" id="themeBtn">🌙</button>
+      <div class="nav-actions">
+        <button class="nav-btn" id="flipBtn" title="切換鏡頭">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 4v6h6M23 20v-6h-6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+        <button class="theme-toggle" id="themeBtn">
+          <span class="theme-icon moon">🌙</span>
+          <span class="theme-icon sun">☀️</span>
+        </button>
       </div>
     </div>
-  </div>
+  </nav>
 
-  <div class="body">
-    <!-- ① Camera -->
-    <div class="card camera-card">
-      <div class="viewport">
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ① Camera Card -->
+    <div class="camera-card">
+      <div class="viewport" id="viewport">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="det-canvas"></canvas>
-        <div class="bracket tl"></div><div class="bracket tr"></div>
-        <div class="bracket bl"></div><div class="bracket br"></div>
-        <div id="scan-bar"></div>
-        <div id="mode-badge">🔴 LIVE</div>
-        <div id="freeze-flash"></div>
-        <div id="big-count">
-          <div class="big-num" id="bigNum">0</div>
-          <div class="big-unit">件</div>
+
+        <!-- Viewfinder corners -->
+        <div class="vf-corner tl"></div>
+        <div class="vf-corner tr"></div>
+        <div class="vf-corner bl"></div>
+        <div class="vf-corner br"></div>
+
+        <!-- Scan line -->
+        <div id="scan-line"></div>
+
+        <!-- Flash -->
+        <div id="cam-flash"></div>
+
+        <!-- Target HUD -->
+        <div id="target-hud">
+          <div class="hud-live-dot"></div>
+          <span class="hud-target-name" id="hud-name">—</span>
         </div>
-        <div id="loading-ov">
-          <div class="spinner" id="loadSpinner"></div>
-          <div class="loading-txt" id="load-txt">下載模型中<br>首次約 15MB</div>
+
+        <!-- Bottom HUD -->
+        <div class="cam-bottom-hud">
+          <div class="hud-count-group">
+            <div class="hud-count-num" id="bigNum">0</div>
+            <div class="hud-count-label" id="hudLabel">件物件</div>
+          </div>
+          <div class="mode-badge">
+            <div class="mode-dot live" id="modeDot"></div>
+            <div class="mode-text" id="modeText">LIVE</div>
+          </div>
         </div>
-        <div class="click-hint" id="clickHint">👆 點擊物件即計數同類</div>
+
+        <!-- Tap hint -->
+        <div id="tap-hint">
+          <div class="tap-ring">
+            <div class="tap-emoji">👆</div>
+          </div>
+          <div class="tap-label">點選畫面中的物件開始計數</div>
+        </div>
+
+        <!-- Loading overlay -->
+        <div id="load-overlay">
+          <div class="spinner"></div>
+          <div class="load-label" id="load-txt">載入 AI 模型中<br>首次約 15 MB</div>
+        </div>
       </div>
 
-      <!-- 統計卡片 -->
-      <div class="stats-strip">
-        <div class="stat-pill" style="background:linear-gradient(135deg,#4d96ff,#c77dff)">
-          <div class="s-label">偵測數量</div>
-          <div class="s-val" id="sCount">0</div>
-          <div class="s-unit">件</div>
-        </div>
-        <div class="stat-pill" style="background:linear-gradient(135deg,#ff6b6b,#ffd93d)">
-          <div class="s-label">最高信心</div>
-          <div class="s-val" id="sConf">—</div>
-          <div class="s-unit">%</div>
-        </div>
-        <div class="stat-pill" style="background:linear-gradient(135deg,#6bcb77,#4d96ff)">
-          <div class="s-label">種類</div>
-          <div class="s-val" id="sClass">—</div>
-          <div class="s-unit">類</div>
-        </div>
-      </div>
-
-      <!-- 按鈕列 -->
+      <!-- Camera controls -->
       <div class="cam-controls">
-        <button class="cam-btn" id="btnFreeze">
-          <div class="cam-btn-circle accent2" id="freezeCircle">📸</div>
-          <div class="cam-btn-label" id="freezeLabel">拍照凍結</div>
+        <button class="cam-ctrl-btn" id="btnFreeze">
+          <div class="ctrl-icon orange-grad">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">凍結</div>
         </button>
-        <button class="cam-btn" id="btnLive">
-          <div class="cam-btn-circle accent">▶</div>
-          <div class="cam-btn-label">恢復直播</div>
+        <button class="cam-ctrl-btn" id="btnLive">
+          <div class="ctrl-icon green-grad">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">直播</div>
         </button>
-        <button class="cam-btn" id="btnSaveHist">
-          <div class="cam-btn-circle accent3">💾</div>
-          <div class="cam-btn-label">儲存紀錄</div>
+        <button class="cam-ctrl-btn" id="btnSave">
+          <div class="ctrl-icon blue-grad">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">儲存</div>
+        </button>
+        <button class="cam-ctrl-btn" id="btnClear">
+          <div class="ctrl-icon" style="background:var(--fill-3);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">清除</div>
         </button>
       </div>
+    </div>
 
-      <!-- 信心滑桿 -->
-      <div class="conf-row">
-        <div class="conf-label">信心閾值</div>
-        <input type="range" id="confSlider" min="20" max="90" value="45">
-        <div class="conf-val" id="confVal">45%</div>
-      </div>
-    </div> <!-- end camera card -->
-
-    <!-- ② Type filter -->
-    <div class="card">
-      <div class="det-header">
-        <div class="det-title">🎯 偵測類別篩選</div>
-        <div class="det-badge" id="filterBadge">全部</div>
-      </div>
-      <div class="type-section">
-        <div class="type-grid" id="typeGrid"></div>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;" id="exactFilterRow">
-          <span style="font-size:12px; font-weight:700; color:var(--text3);">⚡目前鎖定：</span>
-          <span id="currentExactClass" style="font-size:12px; font-weight:800; background:var(--c4l); padding:4px 8px; border-radius:20px; color:var(--c4); display:none;"></span>
-          <button id="clearExactFilter" style="background:none; border:none; font-size:14px; cursor:pointer; color:var(--text3); display:none;">✕ 清除</button>
+    <!-- ② Stats Card -->
+    <div class="section-header">偵測概覽</div>
+    <div class="stats-card">
+      <div class="stat-row">
+        <div class="stat-icon-wrap ic-blue">🎯</div>
+        <div class="stat-row-content">
+          <div class="stat-row-label">目標數量</div>
+          <div class="stat-row-sub">已鎖定物件的計數</div>
         </div>
+        <div class="stat-row-value" id="st-target" style="color:var(--blue)">0</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon-wrap ic-green">📦</div>
+        <div class="stat-row-content">
+          <div class="stat-row-label">全部物件</div>
+          <div class="stat-row-sub">畫面中所有偵測結果</div>
+        </div>
+        <div class="stat-row-value" id="st-all" style="color:var(--green)">0</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon-wrap ic-orange">⚡</div>
+        <div class="stat-row-content">
+          <div class="stat-row-label">最高信心</div>
+          <div class="stat-row-sub">最佳辨識準確度</div>
+        </div>
+        <div class="stat-row-value" id="st-conf" style="color:var(--orange)">—</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-icon-wrap ic-purple">🏷</div>
+        <div class="stat-row-content">
+          <div class="stat-row-label">物件種類</div>
+          <div class="stat-row-sub">偵測到的類別數</div>
+        </div>
+        <div class="stat-row-value" id="st-types" style="color:var(--purple)">—</div>
       </div>
     </div>
 
-    <!-- ③ Detections -->
-    <div class="card">
-      <div class="det-header">
-        <div class="det-title">📋 本次偵測結果</div>
-        <div class="det-badge" id="detBadge">0 物件</div>
+    <!-- ③ Result Card -->
+    <div class="result-card" id="result-card">
+      <div class="rc-header">
+        <div class="rc-header-left">
+          <div class="rc-title" id="rc-title">物件分類</div>
+          <div class="rc-subtitle" id="rc-sub">點選物件以鎖定目標</div>
+        </div>
+        <div class="rc-badge" id="rc-badge">0 件</div>
       </div>
-      <div class="det-list" id="detList">
-        <div class="det-empty">等待偵測中…</div>
-      </div>
+      <div class="rc-list" id="rc-list"></div>
     </div>
 
-    <!-- ④ History -->
-    <div class="card">
-      <div class="det-header">
-        <div class="det-title">🗂 拍照紀錄</div>
-        <button style="background:none;border:none;font-size:12px;font-weight:800;color:var(--c1);cursor:pointer"
-                id="clearHistoryBtn">清除全部</button>
+    <!-- ④ Confidence Slider -->
+    <div class="section-header">辨識設定</div>
+    <div class="slider-card">
+      <div class="slider-header">
+        <div class="slider-label">信心閾值</div>
+        <div class="slider-value" id="conf-val">40%</div>
       </div>
-      <div class="history-wrap" id="histWrap">
+      <input type="range" id="conf-slider" min="10" max="90" value="40">
+    </div>
+
+    <!-- ⑤ History -->
+    <div class="section-header">拍照紀錄</div>
+    <div class="history-card">
+      <div class="hist-header">
+        <div class="hist-title">已儲存紀錄</div>
+        <button class="hist-clear-btn" id="clearHistBtn">全部清除</button>
+      </div>
+      <div class="hist-list" id="hist-list">
         <div class="hist-empty">尚無拍照紀錄</div>
       </div>
     </div>
 
-  </div> <!-- body -->
-</div> <!-- app -->
+  </div><!-- /content -->
+</div><!-- /app -->
 
 <script>
-(function(){
-  /* ----- THEME ----- */
-  const htmlEl = document.documentElement;
-  const themeBtn = document.getElementById('themeBtn');
-  function toggleTheme(){
-    const d = htmlEl.getAttribute('data-theme')==='dark';
-    htmlEl.setAttribute('data-theme', d?'light':'dark');
-    themeBtn.textContent = d?'🌙':'☀️';
-  }
-  themeBtn.onclick = toggleTheme;
-  if(window.matchMedia('(prefers-color-scheme:dark)').matches){
-    htmlEl.setAttribute('data-theme','dark');
-    themeBtn.textContent='☀️';
-  }
+(function () {
+'use strict';
 
-  /* ----- CONSTANTS & HELPERS ----- */
-  const TYPES = [
-    {key:'all',    emoji:'🔍', name:'全部', grad:'linear-gradient(135deg,#4d96ff,#c77dff)'},
-    {key:'person', emoji:'👤', name:'人物', grad:'linear-gradient(135deg,#ff6b6b,#c77dff)'},
-    {key:'bottle', emoji:'🧴', name:'瓶罐', grad:'linear-gradient(135deg,#ff6b6b,#ffd93d)'},
-    {key:'box',    emoji:'📦', name:'箱體', grad:'linear-gradient(135deg,#ff9f1c,#ff6b6b)'},
-    {key:'book',   emoji:'📚', name:'書冊', grad:'linear-gradient(135deg,#6bcb77,#4d96ff)'},
-    {key:'tool',   emoji:'🔧', name:'工具', grad:'linear-gradient(135deg,#c77dff,#4d96ff)'},
-  ];
-  
-  const TOOL_CLASSES   = new Set(['scissors','knife','fork','spoon','toothbrush','cell phone',
-                                 'remote','keyboard','mouse','laptop','clock','vase','cup','bowl']);
-  const BOX_CLASSES    = new Set(['suitcase','handbag','backpack','tv','microwave','oven',
-                                 'refrigerator','sink','toilet','chair','couch','bed']);
-  const BOTTLE_CLASSES = new Set(['bottle','wine glass']);
+/* ── THEME ── */
+const html = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+let isDark = !window.matchMedia('(prefers-color-scheme: light)').matches;
+function applyTheme() {
+  html.setAttribute('data-scheme', isDark ? 'dark' : 'light');
+}
+applyTheme();
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(); });
 
-  function typeOf(cls){
-    if(cls==='person')           return 'person';
-    if(BOTTLE_CLASSES.has(cls))  return 'bottle';
-    if(BOX_CLASSES.has(cls))     return 'box';
-    if(cls==='book')             return 'book';
-    if(TOOL_CLASSES.has(cls))    return 'tool';
-    return 'all';
-  }
+/* ── COLOUR PALETTE (Apple-like vibrant) ── */
+const PALETTE = [
+  { hex: '#0a84ff', name: 'blue'   },
+  { hex: '#30d158', name: 'green'  },
+  { hex: '#ff9f0a', name: 'orange' },
+  { hex: '#bf5af2', name: 'purple' },
+  { hex: '#ff375f', name: 'pink'   },
+  { hex: '#40c8e0', name: 'teal'   },
+  { hex: '#ffd60a', name: 'yellow' },
+  { hex: '#5e5ce6', name: 'indigo' },
+];
+const classColor = {};
+let colorIdx = 0;
+function colorFor(cls) {
+  if (!classColor[cls]) classColor[cls] = PALETTE[colorIdx++ % PALETTE.length].hex;
+  return classColor[cls];
+}
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
 
-  // 篩選狀態
-  let selectedType = 'all';           // 大類按鈕選擇
-  let exactFilterClass = null;        // 精確類名篩選 (點選物件後設定)
+/* ── STATE ── */
+let model = null, stream = null;
+let frozen = false, rafId = null;
+let confThresh = 0.40;
+let allRaw = [];
+let targetClass = null;
+let frozenPixels = null;
+let lastThumb = '';
+let lastDetectTs = 0;
+const snapHistory = [];
 
-  const filterBadge = document.getElementById('filterBadge');
-  const typeGrid = document.getElementById('typeGrid');
-  const currentExactSpan = document.getElementById('currentExactClass');
-  const clearExactBtn = document.getElementById('clearExactFilter');
-  
-  // 建立類別按鈕
-  TYPES.forEach(t => {
-    const btn = document.createElement('button');
-    btn.className = 'type-btn' + (t.key === 'all' ? ' sel' : '');
-    btn.dataset.key = t.key;
-    btn.innerHTML = `<span class="type-emoji">${t.emoji}</span><span class="type-name">${t.name}</span>`;
-    if(t.key === 'all') btn.style.background = t.grad;
-    
-    btn.onclick = () => {
-      // 點擊大類按鈕時，清除精確篩選，切換到大類
-      setExactFilter(null);
-      selectedType = t.key;
-      document.querySelectorAll('.type-btn').forEach(b => { 
-        b.classList.remove('sel'); 
-        b.style.background = ''; 
-      });
-      btn.classList.add('sel');
-      btn.style.background = t.grad;
-      filterBadge.textContent = t.key === 'all' ? '全部' : t.name;
-      
-      // 重新過濾當前顯示
-      applyFilterToLastPreds();
-    };
-    typeGrid.appendChild(btn);
-  });
+/* ── DOM ── */
+const video      = document.getElementById('video');
+const canvas     = document.getElementById('det-canvas');
+const ctx        = canvas.getContext('2d');
+const loadOv     = document.getElementById('load-overlay');
+const loadTxt    = document.getElementById('load-txt');
+const scanLine   = document.getElementById('scan-line');
+const camFlash   = document.getElementById('cam-flash');
+const viewport   = document.getElementById('viewport');
+const bigNum     = document.getElementById('bigNum');
+const hudLabel   = document.getElementById('hudLabel');
+const modeDot    = document.getElementById('modeDot');
+const modeText   = document.getElementById('modeText');
+const tapHint    = document.getElementById('tap-hint');
+const targetHud  = document.getElementById('target-hud');
+const hudName    = document.getElementById('hud-name');
+const stTarget   = document.getElementById('st-target');
+const stAll      = document.getElementById('st-all');
+const stConf     = document.getElementById('st-conf');
+const stTypes    = document.getElementById('st-types');
+const resultCard = document.getElementById('result-card');
+const rcTitle    = document.getElementById('rc-title');
+const rcSub      = document.getElementById('rc-sub');
+const rcBadge    = document.getElementById('rc-badge');
+const rcList     = document.getElementById('rc-list');
+const histListEl = document.getElementById('hist-list');
+const confSlider = document.getElementById('conf-slider');
+const confValEl  = document.getElementById('conf-val');
 
-  // 設定精確篩選類別
-  function setExactFilter(className) {
-    exactFilterClass = className;
-    if (className) {
-      currentExactSpan.textContent = className;
-      currentExactSpan.style.display = 'inline-block';
-      clearExactBtn.style.display = 'inline-block';
-      filterBadge.textContent = `精確: ${className}`;
-      // 取消所有大類按鈕的選中樣式
-      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
-    } else {
-      currentExactSpan.style.display = 'none';
-      clearExactBtn.style.display = 'none';
-      // 恢復大類按鈕選中 (根據 selectedType)
-      document.querySelectorAll('.type-btn').forEach(b => {
-        if (b.dataset.key === selectedType) {
-          b.classList.add('sel');
-          b.style.background = TYPES.find(t => t.key === selectedType)?.grad || '';
-        } else {
-          b.classList.remove('sel');
-          b.style.background = '';
-        }
-      });
-      filterBadge.textContent = selectedType === 'all' ? '全部' : TYPES.find(t => t.key === selectedType)?.name || '全部';
-    }
-  }
+/* ── SLIDER ── */
+function updateSlider(el) {
+  const v = +el.value;
+  confThresh = v / 100;
+  confValEl.textContent = v + '%';
+  const pct = ((v - 10) / 80 * 100).toFixed(1) + '%';
+  el.style.setProperty('--pct', pct);
+  if (allRaw.length) redraw();
+}
+confSlider.addEventListener('input', function () { updateSlider(this); });
+updateSlider(confSlider);
 
-  // 清除精確篩選按鈕
-  clearExactBtn.onclick = () => {
-    setExactFilter(null);
-    applyFilterToLastPreds();
-  };
+/* ── DRAW UTILS ── */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
 
-  // 過濾 preds 陣列 (根據信心、精確類、大類)
-  function filterPredictions(preds) {
-    let filtered = preds.filter(p => p.score > confThresh);
-    if (exactFilterClass) {
-      filtered = filtered.filter(p => p.class === exactFilterClass);
-    } else if (selectedType !== 'all') {
-      filtered = filtered.filter(p => typeOf(p.class) === selectedType);
-    }
-    return filtered;
-  }
+function drawOverlay(preds) {
+  preds.forEach((p, i) => {
+    const [x, y, w, h] = p.bbox;
+    const col = colorFor(p.class);
+    const pct = Math.round(p.score * 100);
+    const isTarget = p.class === targetClass;
+    const alpha = isTarget ? 1 : (targetClass ? 0.35 : 0.85);
 
-  // 應用當前篩選到 lastPreds 並更新畫面
-  function applyFilterToLastPreds() {
-    if (!allPreds) return;
-    const filtered = filterPredictions(allPreds);
-    lastPreds = filtered;
-    if (!frozen) {
-      drawFrame(filtered, false);
-    } else {
-      // 凍結模式下，背景已經固定，只需重繪框
-      drawFrame(filtered, true);
-    }
-    updateStats(filtered);
-  }
+    ctx.save();
+    ctx.globalAlpha = alpha;
 
-  // 顏色配置
-  const CHIP_COLORS = [
-    {bg:'rgba(77,150,255,0.13)',  color:'#4d96ff'},
-    {bg:'rgba(199,125,255,0.13)', color:'#c77dff'},
-    {bg:'rgba(107,203,119,0.13)', color:'#6bcb77'},
-    {bg:'rgba(255,107,107,0.13)', color:'#ff6b6b'},
-    {bg:'rgba(255,217,61,0.13)',  color:'#b38600'},
-    {bg:'rgba(255,159,28,0.13)',  color:'#ff9f1c'},
-  ];
-  const classColorMap = {};
-  let colorIdx = 0;
-  function colorFor(cls){
-    if(!classColorMap[cls]){ 
-      classColorMap[cls] = CHIP_COLORS[colorIdx++ % CHIP_COLORS.length]; 
-    }
-    return classColorMap[cls];
-  }
+    /* box */
+    ctx.shadowColor = col;
+    ctx.shadowBlur = isTarget ? 16 : 6;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = isTarget ? 2.5 : 1.5;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.shadowBlur = 0;
 
-  /* ----- CORE STATE ----- */
-  let model = null;
-  let camStream = null;
-  let frozen = false;
-  let rafId = null;
-  let confThresh = 0.45;
-  let allPreds = [];            // 所有經過信心門檻的原始預測 (未經大類/精確篩選)
-  let lastPreds = [];           // 經過篩選後用於顯示的預測
-  let lastDetectTs = 0;
-  const snapHistory = [];
-  let lastFrozenThumb = '';
+    /* fill for target */
+    if (isTarget) {
+      ctx.fillStyle = hexAlpha(col, 0.10);
+      ctx.fillRect(x, y, w, h);
 
-  // DOM 元素
-  const video       = document.getElementById('video');
-  const canvas      = document.getElementById('det-canvas');
-  const ctx         = canvas.getContext('2d');
-  const loadOv      = document.getElementById('loading-ov');
-  const loadTxt     = document.getElementById('load-txt');
-  const loadSpinner = document.getElementById('loadSpinner');
-  const scanBar     = document.getElementById('scan-bar');
-  const modeBadge   = document.getElementById('mode-badge');
-  const bigNum      = document.getElementById('bigNum');
-  const sCount      = document.getElementById('sCount');
-  const sConf       = document.getElementById('sConf');
-  const sClass      = document.getElementById('sClass');
-  const detList     = document.getElementById('detList');
-  const detBadge    = document.getElementById('detBadge');
-  const histWrap    = document.getElementById('histWrap');
-  const freezeFlash = document.getElementById('freeze-flash');
-  const freezeCircle= document.getElementById('freezeCircle');
-  const freezeLabel = document.getElementById('freezeLabel');
-
-  /* ----- SLIDER ----- */
-  const confSlider = document.getElementById('confSlider');
-  const confVal    = document.getElementById('confVal');
-  
-  function updateConf(el){
-    const v = parseInt(el.value);
-    confThresh = v/100;
-    confVal.textContent = v+'%';
-    const pct = ((v-20)/(90-20)*100).toFixed(1)+'%';
-    el.style.setProperty('--pct', pct);
-    // 信心改變，重新過濾
-    if (allPreds.length) {
-      applyFilterToLastPreds();
-    }
-  }
-  
-  confSlider.addEventListener('input', function() {
-    updateConf(this);
-  });
-  updateConf(confSlider);
-
-  /* ----- MODEL LOAD ----- */
-  async function loadModel(){
-    loadTxt.innerHTML = '下載模型中<br>首次約 15MB';
-    try {
-      model = await cocoSsd.load({base:'mobilenet_v2'});
-    } catch (e) {
-      console.error('模型載入失敗:', e);
-      throw e;
-    }
-  }
-
-  /* ----- CAMERA ----- */
-  let facingMode = 'environment';
-  async function startCamera(){
-    if(camStream) {
-      camStream.getTracks().forEach(t => t.stop());
-    }
-    
-    try {
-      camStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 960 }
-        },
-        audio: false
-      });
-      
-      video.srcObject = camStream;
-      
-      return new Promise((resolve) => {
-        video.onloadedmetadata = () => { 
-          canvas.width = video.videoWidth; 
-          canvas.height = video.videoHeight; 
-          resolve(); 
-        };
-      });
-    } catch (e) {
-      console.error('相機啟動失敗:', e);
-      throw e;
-    }
-  }
-  
-  document.getElementById('flipBtn').onclick = async () => {
-    facingMode = facingMode === 'environment' ? 'user' : 'environment';
-    frozen = false;
-    setLiveMode();
-    try {
-      await startCamera();
-    } catch (e) {
-      showError('無法切換鏡頭，請確認相機權限');
-    }
-  };
-
-  /* ----- DRAW UTILS ----- */
-  function hexToRgba(hex, alpha){
-    const r = parseInt(hex.slice(1,3), 16);
-    const g = parseInt(hex.slice(3,5), 16);
-    const b = parseInt(hex.slice(5,7), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-  
-  function roundRect(ctx, x, y, w, h, r){
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  }
-
-  function drawFrame(preds, isFrozen){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if(!isFrozen) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
-    
-    preds.forEach((pred, i) => {
-      const [x, y, w, h] = pred.bbox;
-      const c = colorFor(pred.class);
-      const pct = Math.round(pred.score * 100);
-      
-      // 發光邊框
-      ctx.save();
-      ctx.shadowColor = c.color;
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = c.color;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(x, y, w, h);
-      ctx.restore();
-      
-      // 角落標記
+      /* corner ticks */
       const tk = 14;
-      ctx.strokeStyle = c.color;
-      ctx.lineWidth = 3;
-      const corners = [
-        [x, y, x+tk, y],
-        [x+w-tk, y, x+w, y],
-        [x, y+h-tk, x, y+h],
-        [x+w, y+h-tk, x+w, y+h]
-      ];
-      corners.forEach(([x1, y1, x2, y2]) => {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = 3;
+      ctx.shadowColor = col; ctx.shadowBlur = 8;
+      [[x,y,x+tk,y],[x+w-tk,y,x+w,y],
+       [x,y+h-tk,x,y+h],[x+w,y+h-tk,x+w,y+h]]
+      .forEach(([x1,y1,x2,y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       });
-      
-      // 標籤背景
-      ctx.font = 'bold 13px Nunito, sans-serif';
-      const label = `${pred.class.toUpperCase()}  ${pct}%`;
-      const tw = ctx.measureText(label).width;
-      ctx.fillStyle = hexToRgba(c.color, 0.8);
-      roundRect(ctx, x, y-28, tw+14, 26, 5);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
       ctx.shadowBlur = 0;
-      ctx.fillText(label, x+7, y-10);
-      
-      // 編號
-      ctx.save();
-      ctx.font = 'bold 15px Nunito, sans-serif';
-      ctx.fillStyle = c.color;
-      ctx.shadowColor = c.color;
-      ctx.shadowBlur = 8;
-      ctx.fillText(`#${i+1}`, x+6, y+20);
-      ctx.restore();
-    });
+    }
+
+    /* label */
+    ctx.font = `${isTarget?'600':'500'} ${isTarget?12:11}px -apple-system, SF Pro Text, sans-serif`;
+    const lbl = isTarget ? `${p.class}  ${pct}%` : `${p.class}`;
+    const tw = ctx.measureText(lbl).width;
+    const lbH = isTarget ? 22 : 18;
+    const lbW = tw + (isTarget ? 16 : 12);
+
+    /* label bg */
+    const ly = Math.max(y - lbH - 4, 2);
+    ctx.fillStyle = isTarget ? hexAlpha(col, 0.88) : 'rgba(0,0,0,0.60)';
+    rr(x, ly, lbW, lbH + 2, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(lbl, x + (isTarget ? 8 : 6), ly + lbH - 3);
+
+    /* number badge — target only */
+    if (isTarget) {
+      ctx.font = '700 13px -apple-system, SF Pro Text, sans-serif';
+      ctx.fillStyle = hexAlpha(col, 1);
+      ctx.shadowColor = col; ctx.shadowBlur = 8;
+      ctx.fillText(`#${i+1}`, x + 7, y + 18);
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  });
+}
+
+function drawLive(preds) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  drawOverlay(preds);
+}
+
+/* ── FILTER ── */
+function getFiltered() {
+  const pass = allRaw.filter(p => p.score > confThresh);
+  if (!targetClass) return pass;
+  return pass.filter(p => p.class === targetClass);
+}
+
+/* ── REDRAW (frozen) ── */
+function redraw() {
+  const filtered = getFiltered();
+  if (frozen && frozenPixels) {
+    ctx.putImageData(frozenPixels, 0, 0);
+    const allPass = allRaw.filter(p => p.score > confThresh);
+    drawOverlay(allPass);
+  }
+  updateUI(filtered, allRaw.filter(p => p.score > confThresh));
+}
+
+/* ── UI UPDATE ── */
+function updateUI(targetPreds, allPreds) {
+  const n = targetPreds.length;
+  const total = allPreds.length;
+
+  /* big number */
+  bigNum.textContent = n;
+  bigNum.classList.toggle('targeted', !!targetClass);
+  hudLabel.textContent = targetClass ? `× ${targetClass}` : '件物件';
+
+  /* stats */
+  stTarget.textContent = n;
+  stAll.textContent = total;
+  if (allPreds.length) {
+    const best = allPreds.reduce((a,b) => a.score > b.score ? a : b);
+    stConf.textContent = Math.round(best.score * 100) + '%';
+    const types = new Set(allPreds.map(p => p.class)).size;
+    stTypes.textContent = types;
+  } else {
+    stConf.textContent = '—';
+    stTypes.textContent = '—';
   }
 
-  /* ----- DETECTION LOOP ----- */
-  async function detectFrame() {
-    if (!model || frozen || video.readyState !== 4 || !video.videoWidth) {
-      return;
-    }
-    
-    try {
-      const raw = await model.detect(video);
-      if (frozen) return;
-      
-      // 先按信心門檻過濾，得到所有預測
-      const thresholdPreds = raw.filter(p => p.score > confThresh);
-      allPreds = thresholdPreds;
-      
-      // 再根據篩選條件過濾用於顯示的預測
-      const filtered = filterPredictions(thresholdPreds);
-      lastPreds = filtered;
-      
-      drawFrame(filtered, false);
-      updateStats(filtered);
-    } catch (e) {
-      console.warn('偵測錯誤:', e);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
-  }
+  /* result card */
+  if (allPreds.length > 0) {
+    const groups = {};
+    allPreds.forEach(p => { groups[p.class] = (groups[p.class]||0)+1; });
+    const sorted = Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+    const maxN = sorted[0][1];
 
-  function loop(ts) {
-    if (frozen) {
-      rafId = requestAnimationFrame(loop);
-      return;
-    }
-    
+    rcTitle.textContent = targetClass ? `目標：${targetClass}` : '全部物件';
+    rcSub.textContent = targetClass
+      ? `找到 ${n} 件 ${targetClass}`
+      : `共 ${total} 件 · ${sorted.length} 種類別`;
+    rcBadge.textContent = n + ' 件';
+
+    rcList.innerHTML = sorted.map(([cls, cnt]) => {
+      const col = colorFor(cls);
+      const bar = Math.round(cnt / maxN * 100);
+      const isT = cls === targetClass;
+      return `<div class="rc-item">
+        <div class="rc-color-dot" style="background:${col}"></div>
+        <div class="rc-item-name${isT?' highlight':''}" style="${isT?'color:'+col:''}">${cls}</div>
+        <div class="rc-bar-wrap">
+          <div class="rc-bar" style="width:${bar}%;background:${col}"></div>
+        </div>
+        <div class="rc-item-count" style="${isT?'color:'+col+';font-weight:700':''}">${cnt}</div>
+      </div>`;
+    }).join('');
+    resultCard.classList.add('open');
+  } else {
+    resultCard.classList.remove('open');
+  }
+}
+
+/* ── DETECTION LOOP ── */
+async function detectFrame() {
+  if (!model || frozen || video.readyState !== 4 || !video.videoWidth) return;
+  try {
+    const raw = await model.detect(video);
+    if (frozen) return;
+    allRaw = raw;
+    const filtered = getFiltered();
+    const allPass = raw.filter(p => p.score > confThresh);
+    drawLive(allPass);      // draw all with alpha, target full
+    updateUI(filtered, allPass);
+  } catch (e) {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
+}
+
+function loop(ts) {
+  if (!frozen) {
     if (model && video.readyState === 4 && video.videoWidth) {
       if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
       }
-      
-      if (ts - lastDetectTs > 220) {
+      if (ts - lastDetectTs > 210) {
         lastDetectTs = ts;
         detectFrame();
       } else {
-        drawFrame(lastPreds, false);
+        const allPass = allRaw.filter(p => p.score > confThresh);
+        drawLive(allPass);
       }
     }
-    
-    rafId = requestAnimationFrame(loop);
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
+/* ── TAP TO SELECT ── */
+canvas.addEventListener('click', e => {
+  if (!allRaw.length) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+
+  /* ripple */
+  const rip = document.createElement('div');
+  rip.className = 'tap-ripple';
+  rip.style.left = (e.clientX - rect.left) + 'px';
+  rip.style.top  = (e.clientY - rect.top) + 'px';
+  viewport.appendChild(rip);
+  setTimeout(() => rip.remove(), 700);
+
+  /* hit test */
+  const pass = allRaw.filter(p => p.score > confThresh);
+  let hit = null;
+  for (let i = pass.length - 1; i >= 0; i--) {
+    const [x,y,w,h] = pass[i].bbox;
+    if (cx >= x && cx <= x+w && cy >= y && cy <= y+h) { hit = pass[i]; break; }
   }
 
-  /* ----- STATS & UI UPDATE ----- */
-  function updateStats(preds){
-    const n = preds.length;
-    sCount.textContent = n;
-    bigNum.textContent = n;
-    bigNum.classList.remove('pop');
-    void bigNum.offsetWidth;
-    bigNum.classList.add('pop');
-    
-    if (n > 0) {
-      const top = preds.reduce((a, b) => a.score > b.score ? a : b);
-      sConf.textContent = Math.round(top.score * 100);
-      sClass.textContent = [...new Set(preds.map(p => p.class))].length;
-    } else {
-      sConf.textContent = '—';
-      sClass.textContent = '—';
-    }
-    
-    detBadge.textContent = n + ' 物件';
-    
-    if (n === 0) {
-      detList.innerHTML = '<div class="det-empty">無偵測結果</div>';
-    } else {
-      detList.innerHTML = [...preds]
-        .sort((a, b) => b.score - a.score)
-        .map((p, i) => {
-          const c = colorFor(p.class);
-          const pct = Math.round(p.score * 100);
-          return `<div class="det-chip" style="background:${c.bg};color:${c.color}">
-            <span class="chip-dot" style="background:${c.color}"></span>
-            #${i+1} ${p.class} <span style="opacity:.6">${pct}%</span></div>`;
-        }).join('');
-    }
+  if (hit) {
+    setTarget(targetClass === hit.class ? null : hit.class);
+  } else {
+    setTarget(null);
   }
+});
 
-  /* ----- FREEZE / LIVE ----- */
-  function setLiveMode(){
-    frozen = false;
-    scanBar.classList.add('on');
-    modeBadge.textContent = '🔴 LIVE';
-    modeBadge.classList.remove('frozen');
-    freezeLabel.textContent = '拍照凍結';
-    freezeCircle.textContent = '📸';
+function setTarget(cls) {
+  targetClass = cls;
+  tapHint.classList.add('gone');
+  if (cls) {
+    hudName.textContent = cls;
+    targetHud.classList.add('show');
+  } else {
+    targetHud.classList.remove('show');
   }
+  redraw();
+}
 
-  document.getElementById('btnFreeze').onclick = () => {
-    if (!frozen && model && video.readyState === 4) {
-      frozen = true;
-      
-      freezeFlash.classList.add('flash');
-      setTimeout(() => freezeFlash.classList.remove('flash'), 180);
-      
+/* ── FREEZE / LIVE ── */
+document.getElementById('btnFreeze').addEventListener('click', () => {
+  if (frozen || !model || video.readyState !== 4) return;
+  camFlash.classList.add('on');
+  setTimeout(() => camFlash.classList.remove('on'), 150);
+  frozen = true;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  frozenPixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  scanLine.classList.remove('on');
+  modeDot.className = 'mode-dot frozen';
+  modeText.textContent = 'FROZEN';
+
+  model.detect(video).then(raw => {
+    allRaw = raw;
+    const allPass = raw.filter(p => p.score > confThresh);
+    ctx.putImageData(frozenPixels, 0, 0);
+    drawOverlay(allPass);
+    updateUI(getFiltered(), allPass);
+    lastThumb = canvas.toDataURL('image/jpeg', 0.65);
+  }).catch(() => { lastThumb = canvas.toDataURL('image/jpeg', 0.65); });
+});
+
+document.getElementById('btnLive').addEventListener('click', () => {
+  frozen = false; frozenPixels = null; allRaw = [];
+  scanLine.classList.add('on');
+  modeDot.className = 'mode-dot live';
+  modeText.textContent = 'LIVE';
+  updateUI([], []);
+});
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  setTarget(null);
+  tapHint.classList.remove('gone');
+});
+
+/* ── SAVE ── */
+document.getElementById('btnSave').addEventListener('click', () => {
+  const thumb = lastThumb || canvas.toDataURL('image/jpeg', 0.55);
+  const t = new Date().toLocaleTimeString('zh-TW', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  const filtered = getFiltered();
+  snapHistory.unshift({
+    thumb,
+    target: targetClass || '全部',
+    count: filtered.length,
+    time: t
+  });
+  if (snapHistory.length > 12) snapHistory.pop();
+  lastThumb = '';
+  renderHistory();
+});
+
+document.getElementById('clearHistBtn').addEventListener('click', () => {
+  snapHistory.length = 0;
+  renderHistory();
+});
+
+function renderHistory() {
+  if (!snapHistory.length) {
+    histListEl.innerHTML = '<div class="hist-empty">尚無拍照紀錄</div>';
+    return;
+  }
+  histListEl.innerHTML = snapHistory.map((h, i) => `
+    <div class="hist-item">
+      <img class="hist-thumb" src="${h.thumb}" alt="">
+      <div class="hist-info">
+        <div class="hist-target">${h.target}</div>
+        <div class="hist-meta">${h.time}</div>
+      </div>
+      <div class="hist-count">${h.count}</div>
+      <button class="hist-del" data-i="${i}" aria-label="刪除">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </button>
+    </div>`).join('');
+  histListEl.querySelectorAll('.hist-del').forEach(btn => {
+    btn.addEventListener('click', function () {
+      snapHistory.splice(+this.dataset.i, 1);
+      renderHistory();
+    });
+  });
+}
+
+/* ── FLIP ── */
+let facingMode = 'environment';
+document.getElementById('flipBtn').addEventListener('click', async () => {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  frozen = false; frozenPixels = null; allRaw = [];
+  scanLine.classList.add('on');
+  modeDot.className = 'mode-dot live'; modeText.textContent = 'LIVE';
+  try { await startCam(); } catch(e) { loadTxt.textContent = '無法切換鏡頭'; }
+});
+
+/* ── CAMERA ── */
+async function startCam() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 960 } },
+    audio: false
+  });
+  video.srcObject = stream;
+  return new Promise(res => {
+    video.onloadedmetadata = () => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      scanBar.classList.remove('on');
-      modeBadge.textContent = '❄️ 已凍結';
-      modeBadge.classList.add('frozen');
-      freezeLabel.textContent = '已凍結';
-      freezeCircle.textContent = '❄️';
-      
-      model.detect(video).then(raw => {
-        const thresholdPreds = raw.filter(p => p.score > confThresh);
-        allPreds = thresholdPreds;
-        const filtered = filterPredictions(thresholdPreds);
-        lastPreds = filtered;
-        
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        drawFrame(filtered, true);
-        updateStats(filtered);
-        
-        lastFrozenThumb = canvas.toDataURL('image/jpeg', 0.6);
-      }).catch(() => { 
-        lastFrozenThumb = canvas.toDataURL('image/jpeg', 0.6); 
-      });
-    }
-  };
-
-  document.getElementById('btnLive').onclick = () => setLiveMode();
-
-  /* ----- 智慧點選：點擊物件即計數同類 (canvas 點擊事件) ----- */
-  canvas.addEventListener('click', (e) => {
-    if (!allPreds.length) return; // 沒有預測資料
-    
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    const clickX = (e.clientX - rect.left) * scaleX;
-    const clickY = (e.clientY - rect.top) * scaleY;
-    
-    // 遍歷所有原始預測 (allPreds) 找出被點擊的物件
-    let hit = null;
-    for (let pred of allPreds) {
-      const [x, y, w, h] = pred.bbox;
-      if (clickX >= x && clickX <= x + w && clickY >= y && clickY <= y + h) {
-        hit = pred;
-        break;
-      }
-    }
-    
-    if (hit) {
-      // 如果點擊的類別與目前精確篩選類別相同，則清除篩選；否則設為該類別
-      if (exactFilterClass === hit.class) {
-        setExactFilter(null);
-      } else {
-        setExactFilter(hit.class);
-      }
-      applyFilterToLastPreds();
-      
-      // 視覺提示：閃一下
-      canvas.style.transition = 'box-shadow 0.1s';
-      canvas.style.boxShadow = '0 0 0 3px rgba(77,150,255,0.8)';
-      setTimeout(() => {
-        canvas.style.boxShadow = '';
-        canvas.style.transition = '';
-      }, 200);
-    }
+      res();
+    };
   });
+}
 
-  /* ----- HISTORY ----- */
-  document.getElementById('btnSaveHist').onclick = () => {
-    const thumb = lastFrozenThumb || canvas.toDataURL('image/jpeg', 0.55);
-    const now = new Date();
-    const t = now.toLocaleTimeString('zh-TW', {
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit'
-    });
-    
-    snapHistory.unshift({
-      thumb, 
-      count: lastPreds.length, 
-      time: t,
-      classes: [...new Set(lastPreds.map(p => p.class))]
-    });
-    
-    if (snapHistory.length > 12) snapHistory.pop();
-    lastFrozenThumb = '';
-    renderHistory();
-  };
-
-  document.getElementById('clearHistoryBtn').onclick = function() {
-    snapHistory.length = 0;
-    renderHistory();
-  };
-
-  function renderHistory(){
-    if (snapHistory.length === 0) {
-      histWrap.innerHTML = '<div class="hist-empty">尚無拍照紀錄</div>';
-    } else {
-      histWrap.innerHTML = snapHistory.map((h, i) => {
-        const classStr = h.classes.length ? ' · ' + h.classes.slice(0, 3).join('、') : '';
-        return `
-        <div class="hist-item">
-          <img class="hist-thumb" src="${h.thumb}" alt="snap">
-          <div class="hist-info">
-            <div class="hist-count">偵測 ${h.count} 件</div>
-            <div class="hist-meta">${h.time}${classStr}</div>
-          </div>
-          <button class="hist-del" onclick="(function(idx){
-            const snapshots = document.querySelectorAll('.hist-item');
-            if(snapshots[idx]) snapshots[idx].remove();
-            window.snapHistory.splice(idx, 1);
-          })(${i})">✕</button>
-        </div>`;
-      }).join('');
-    }
+/* ── INIT ── */
+async function init() {
+  try {
+    loadTxt.innerHTML = '載入 AI 模型中<br>首次約 15 MB';
+    model = await cocoSsd.load({ base: 'mobilenet_v2' });
+    loadTxt.textContent = '開啟相機…';
+    await startCam();
+    loadOv.classList.add('hidden');
+    scanLine.classList.add('on');
+    rafId = requestAnimationFrame(loop);
+  } catch (e) {
+    document.querySelector('.spinner').style.display = 'none';
+    loadTxt.innerHTML = '❌ 初始化失敗<br><span style="font-size:11px;opacity:.5">' +
+      (e.message || '請確認相機權限後重整頁面') + '</span>';
   }
+}
 
-  window.snapHistory = snapHistory;
+document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', init)
+  : init();
 
-  /* ----- ERROR HANDLING ----- */
-  function showError(msg) {
-    loadOv.classList.remove('gone');
-    loadOv.style.cssText = 'opacity:1;pointer-events:auto';
-    loadSpinner.style.display = 'none';
-    loadTxt.innerHTML = '❌ 錯誤<br><span style="font-size:11px;opacity:.65;text-transform:none;letter-spacing:0">' + msg + '</span>';
-  }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(rafId); rafId = null; }
+  else if (model && !rafId && !frozen) rafId = requestAnimationFrame(loop);
+});
 
-  /* ----- INIT ----- */
-  async function init() {
-    try {
-      await loadModel();
-      loadTxt.innerHTML = '開啟相機中…';
-      await startCamera();
-      loadOv.classList.add('gone');
-      scanBar.classList.add('on');
-      rafId = requestAnimationFrame(loop);
-    } catch (e) {
-      console.error('Init error:', e);
-      showError(e && e.message ? e.message : '請確認相機權限後重新整理頁面');
-    }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  /* ----- VISIBILITY ----- */
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-    } else {
-      if (model && !rafId && !frozen) {
-        rafId = requestAnimationFrame(loop);
-      }
-    }
-  });
 })();
 </script>
 </body>
