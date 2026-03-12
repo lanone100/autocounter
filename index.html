@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>零件相機計數 · 工業視覺</title>
+<title>零件相機計數 · 點選同類</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
@@ -274,7 +274,7 @@ input[type=range]::-webkit-slider-thumb{
     <div class="header-inner">
       <div class="header-left">
         <div class="app-title">零件計數</div>
-        <div class="app-sub">相機拍攝 · 自動辨識</div>
+        <div class="app-sub">點選物件 · 同類計數</div>
       </div>
       <div class="header-btns">
         <button class="icon-btn" id="flipBtn" title="翻轉鏡頭">🔄</button>
@@ -304,7 +304,7 @@ input[type=range]::-webkit-slider-thumb{
         </div>
       </div>
 
-      <!-- 統計卡片 (inside camera card but visually part of it) -->
+      <!-- 統計卡片 -->
       <div class="stats-strip">
         <div class="stat-pill" style="background:linear-gradient(135deg,#4d96ff,#c77dff)">
           <div class="s-label">偵測數量</div>
@@ -355,6 +355,11 @@ input[type=range]::-webkit-slider-thumb{
       </div>
       <div class="type-section">
         <div class="type-grid" id="typeGrid"></div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;" id="exactFilterRow">
+          <span style="font-size:12px; font-weight:700; color:var(--text3);">⚡點選物件</span>
+          <span id="currentExactClass" style="font-size:12px; font-weight:800; background:var(--c4l); padding:4px 8px; border-radius:20px; color:var(--c4); display:none;"></span>
+          <button id="clearExactFilter" style="background:none; border:none; font-size:14px; cursor:pointer; color:var(--text3); display:none;">✕ 清除</button>
+        </div>
       </div>
     </div>
 
@@ -425,9 +430,14 @@ input[type=range]::-webkit-slider-thumb{
     return 'all';
   }
 
-  let selectedType = 'all';
+  // 篩選狀態
+  let selectedType = 'all';           // 大類按鈕選擇
+  let exactFilterClass = null;        // 精確類名篩選 (點選物件後設定)
+
   const filterBadge = document.getElementById('filterBadge');
   const typeGrid = document.getElementById('typeGrid');
+  const currentExactSpan = document.getElementById('currentExactClass');
+  const clearExactBtn = document.getElementById('clearExactFilter');
   
   // 建立類別按鈕
   TYPES.forEach(t => {
@@ -438,6 +448,8 @@ input[type=range]::-webkit-slider-thumb{
     if(t.key === 'all') btn.style.background = t.grad;
     
     btn.onclick = () => {
+      // 點擊大類按鈕時，清除精確篩選，切換到大類
+      setExactFilter(null);
       selectedType = t.key;
       document.querySelectorAll('.type-btn').forEach(b => { 
         b.classList.remove('sel'); 
@@ -447,18 +459,71 @@ input[type=range]::-webkit-slider-thumb{
       btn.style.background = t.grad;
       filterBadge.textContent = t.key === 'all' ? '全部' : t.name;
       
-      // 當篩選條件改變時，重新過濾當前顯示的結果
-      if (!frozen && lastPreds.length > 0) {
-        let filtered = lastPreds;
-        if (selectedType !== 'all') {
-          filtered = lastPreds.filter(p => typeOf(p.class) === selectedType);
-        }
-        drawFrame(filtered, false);
-        updateStats(filtered);
-      }
+      // 重新過濾當前顯示
+      applyFilterToLastPreds();
     };
     typeGrid.appendChild(btn);
   });
+
+  // 設定精確篩選類別
+  function setExactFilter(className) {
+    exactFilterClass = className;
+    if (className) {
+      currentExactSpan.textContent = className;
+      currentExactSpan.style.display = 'inline-block';
+      clearExactBtn.style.display = 'inline-block';
+      filterBadge.textContent = `精確: ${className}`;
+      // 取消所有大類按鈕的選中樣式 (可選)
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
+    } else {
+      currentExactSpan.style.display = 'none';
+      clearExactBtn.style.display = 'none';
+      // 恢復大類按鈕選中 (根據 selectedType)
+      document.querySelectorAll('.type-btn').forEach(b => {
+        if (b.dataset.key === selectedType) {
+          b.classList.add('sel');
+          b.style.background = TYPES.find(t => t.key === selectedType)?.grad || '';
+        } else {
+          b.classList.remove('sel');
+          b.style.background = '';
+        }
+      });
+      filterBadge.textContent = selectedType === 'all' ? '全部' : TYPES.find(t => t.key === selectedType)?.name || '全部';
+    }
+  }
+
+  // 清除精確篩選按鈕
+  clearExactBtn.onclick = () => {
+    setExactFilter(null);
+    applyFilterToLastPreds();
+  };
+
+  // 過濾 preds 陣列 (根據信心、精確類、大類)
+  function filterPredictions(preds) {
+    let filtered = preds.filter(p => p.score > confThresh);
+    if (exactFilterClass) {
+      filtered = filtered.filter(p => p.class === exactFilterClass);
+    } else if (selectedType !== 'all') {
+      filtered = filtered.filter(p => typeOf(p.class) === selectedType);
+    }
+    return filtered;
+  }
+
+  // 應用當前篩選到 lastPreds 並更新畫面
+  function applyFilterToLastPreds() {
+    if (!allPreds) return;
+    const filtered = filterPredictions(allPreds);
+    lastPreds = filtered;
+    if (!frozen) {
+      drawFrame(filtered, false);
+    } else {
+      // 如果處於凍結模式，應該在凍結的畫面上重繪篩選後的框
+      // 但凍結時 lastPreds 可能來自凍結時的檢測，我們需要保留背景圖
+      // 這裡簡單重繪（背景已經存在）
+      drawFrame(filtered, true);
+    }
+    updateStats(filtered);
+  }
 
   // 顏色配置
   const CHIP_COLORS = [
@@ -484,7 +549,8 @@ input[type=range]::-webkit-slider-thumb{
   let frozen = false;
   let rafId = null;
   let confThresh = 0.45;
-  let lastPreds = [];
+  let allPreds = [];            // 所有經過信心門檻的原始預測 (未經大類/精確篩選)
+  let lastPreds = [];           // 經過篩選後用於顯示的預測
   let lastDetectTs = 0;
   const snapHistory = [];
   let lastFrozenThumb = '';
@@ -519,6 +585,10 @@ input[type=range]::-webkit-slider-thumb{
     confVal.textContent = v+'%';
     const pct = ((v-20)/(90-20)*100).toFixed(1)+'%';
     el.style.setProperty('--pct', pct);
+    // 信心改變，重新過濾
+    if (allPreds.length) {
+      applyFilterToLastPreds();
+    }
   }
   
   confSlider.addEventListener('input', function() {
@@ -605,7 +675,6 @@ input[type=range]::-webkit-slider-thumb{
   function drawFrame(preds, isFrozen){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 畫背景（如果是凍結模式就用已凍結的畫面，否則用視訊）
     if(!isFrozen) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
@@ -671,16 +740,18 @@ input[type=range]::-webkit-slider-thumb{
     
     try {
       const raw = await model.detect(video);
-      if (frozen) return; // 如果在偵測過程中凍結，就拋棄結果
+      if (frozen) return;
       
-      let preds = raw.filter(p => p.score > confThresh);
-      if (selectedType !== 'all') {
-        preds = preds.filter(p => typeOf(p.class) === selectedType);
-      }
+      // 先按信心門檻過濾，得到所有預測
+      const thresholdPreds = raw.filter(p => p.score > confThresh);
+      allPreds = thresholdPreds;
       
-      lastPreds = preds;
-      drawFrame(preds, false);
-      updateStats(preds);
+      // 再根據篩選條件過濾用於顯示的預測
+      const filtered = filterPredictions(thresholdPreds);
+      lastPreds = filtered;
+      
+      drawFrame(filtered, false);
+      updateStats(filtered);
     } catch (e) {
       console.warn('偵測錯誤:', e);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -716,7 +787,7 @@ input[type=range]::-webkit-slider-thumb{
     sCount.textContent = n;
     bigNum.textContent = n;
     bigNum.classList.remove('pop');
-    void bigNum.offsetWidth; // 觸發重繪
+    void bigNum.offsetWidth;
     bigNum.classList.add('pop');
     
     if (n > 0) {
@@ -759,11 +830,9 @@ input[type=range]::-webkit-slider-thumb{
     if (!frozen && model && video.readyState === 4) {
       frozen = true;
       
-      // 閃光效果
       freezeFlash.classList.add('flash');
       setTimeout(() => freezeFlash.classList.remove('flash'), 180);
       
-      // 設定畫布大小並凍結畫面
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -774,20 +843,16 @@ input[type=range]::-webkit-slider-thumb{
       freezeLabel.textContent = '已凍結';
       freezeCircle.textContent = '❄️';
       
-      // 對凍結的畫面進行偵測
       model.detect(video).then(raw => {
-        let preds = raw.filter(p => p.score > confThresh);
-        if (selectedType !== 'all') {
-          preds = preds.filter(p => typeOf(p.class) === selectedType);
-        }
-        lastPreds = preds;
+        const thresholdPreds = raw.filter(p => p.score > confThresh);
+        allPreds = thresholdPreds;
+        const filtered = filterPredictions(thresholdPreds);
+        lastPreds = filtered;
         
-        // 重新繪製（保留凍結的畫面）
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        drawFrame(preds, true);
-        updateStats(preds);
+        drawFrame(filtered, true);
+        updateStats(filtered);
         
-        // 儲存縮圖
         lastFrozenThumb = canvas.toDataURL('image/jpeg', 0.6);
       }).catch(() => { 
         lastFrozenThumb = canvas.toDataURL('image/jpeg', 0.6); 
@@ -796,6 +861,38 @@ input[type=range]::-webkit-slider-thumb{
   };
 
   document.getElementById('btnLive').onclick = () => setLiveMode();
+
+  /* ----- 點選物件篩選 (canvas 點擊事件) ----- */
+  canvas.addEventListener('click', (e) => {
+    if (!allPreds.length) return; // 沒有預測資料
+    
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
+    
+    // 遍歷所有原始預測 (allPreds) 找出被點擊的物件
+    let hit = null;
+    for (let pred of allPreds) {
+      const [x, y, w, h] = pred.bbox;
+      if (clickX >= x && clickX <= x + w && clickY >= y && clickY <= y + h) {
+        hit = pred;
+        break;
+      }
+    }
+    
+    if (hit) {
+      // 如果點擊的類別與目前精確篩選類別相同，則清除篩選；否則設為該類別
+      if (exactFilterClass === hit.class) {
+        setExactFilter(null);
+      } else {
+        setExactFilter(hit.class);
+      }
+      applyFilterToLastPreds();
+    }
+  });
 
   /* ----- HISTORY ----- */
   document.getElementById('btnSaveHist').onclick = () => {
@@ -847,7 +944,6 @@ input[type=range]::-webkit-slider-thumb{
     }
   }
 
-  // 將 snapHistory 暴露給全域，讓刪除按鈕可以存取
   window.snapHistory = snapHistory;
 
   /* ----- ERROR HANDLING ----- */
@@ -873,7 +969,6 @@ input[type=range]::-webkit-slider-thumb{
     }
   }
   
-  // 延遲初始化，確保 DOM 完全載入
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
